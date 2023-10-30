@@ -7,7 +7,7 @@
 /// as long as you give proper credit to the original and subsequent authors.
 ///
 /// João Manuel Rodrigues <jmr@ua.pt>
-/// 2013, 2023 aaaaaaaaaaaaaaa
+/// 2013, 2023
 
 // Student authors (fill in below):
 // NMec:  Name:
