@@ -294,7 +294,8 @@ int ImageMaxval(Image img) { ///
 void ImageStats(Image img, uint8* min, uint8* max) {
     assert(img != NULL);
     InstrCount[0] = 0;
-    //ver melhor estes inicializadores codigo ainda não corrigido
+    //ver melhor não corrigido
+
     *min = UINT8_MAX;  // Inicializa min com o maximum value.
     *max = 0;         // Inicializa o max em 0.
     ///////////////////////
