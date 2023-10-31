@@ -291,10 +291,27 @@ int ImageMaxval(Image img) { ///
 /// Após a execução,
 /// *min é definido como o nível de cinza mínimo na imagem,
 /// *max é definido como o máximo.
-void ImageStats(Image img, uint8* min, uint8* max) { ///
-  assert (img != NULL);
-  // Insert your code here!
+void ImageStats(Image img, uint8* min, uint8* max) {
+    assert(img != NULL);
+    //ver melhor estes inicializadores codigo ainda não corrigido
+    *min = UINT8_MAX;  // Initialize min to the maximum value.
+    *max = 0;         // Initialize max to 0.
+    //////////////////////////////////
+    for (int i = 0; i < PixMax; i++) {
+        int pixel_value = img->pixel[i];
+        int pixel_min = img->pixel[0];
+        int pixel_max = img->maxval;
+
+        if (pixel_value < *min)
+            *min = pixel_min;
+        if (pixel_value > *max)
+            *max = pixel_max;
+    }
+
+    printf("min: %d\n", *min);
+    printf("max: %d\n", *max);
 }
+
 
 /// Check if pixel position (x,y) is inside img.
 int ImageValidPos(Image img, int x, int y) { ///
@@ -305,6 +322,7 @@ int ImageValidPos(Image img, int x, int y) { ///
 /// Check if rectangular area (x,y,w,h) is completely inside img.
 int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
+    return (0 <= x && x+w <= img->width) && (0 <= y && y+h <= img->height);
   // Insert your code here!
 }
 
@@ -313,6 +331,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
 /// na imagem.
 /// São operações muito simples, mas fundamentais, que podem ser usadas para
 /// implementar operações mais complexas.
+
 
 // Transforma as coordenadas (x, y) em um índice linear de pixel.
 // Esta função interna é usada em ImageGetPixel / ImageSetPixel.
