@@ -46,7 +46,7 @@
 //Valor máximo que você pode armazenar em um pixel (valor máximo aceitável)
 const uint8 PixMax = 255;
 
-ChatGPT
+
 
 // Estrutura interna para armazenar imagens em tons de cinza de 8 bits
 struct image {
