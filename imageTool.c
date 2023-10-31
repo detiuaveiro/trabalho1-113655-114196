@@ -77,13 +77,13 @@ static char* errors[] = {
 };
 
 
-// This program strives for correctness and robustness.
-// You may want to temporarily comment out operand validation, namely
-// precondition checks, so that you can force precondition violations, and
-// observe the effect of assertions.
+// Este programa busca a correção e a robustez.
+// Você pode querer comentar temporariamente a validação de operações, ou seja,
+// verificações de pré-condições, para que você possa forçar violações de pré-condições e
+// observar o efeito das asserções.
 //
-// Also, the program does not test every module function, but you may easily
-// add new operations for that purpose.
+// Além disso, o programa não testa todas as funções dos módulos, mas você pode facilmente
+// adicionar novas operações para esse fim.
 
 int main(int ac, char* av[]) {
   if (ac <= 1) {
@@ -216,7 +216,7 @@ int main(int ac, char* av[]) {
     k++;
   }
   
-  // Destroy remaining images
+  // destroi as imagens restantes
   while (n > 0) {
     ImageDestroy(&img[--n]);
   }
