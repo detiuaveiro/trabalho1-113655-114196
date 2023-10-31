@@ -296,8 +296,8 @@ void ImageStats(Image img, uint8* min, uint8* max) {
     InstrCount[0] = 0;
     //ver melhor não corrigido
 
-    *min = UINT8_MAX;  // Inicializa min com o maximum value.
-    *max = 0;         // Inicializa o max em 0.
+    *min = UINT8_MAX;  // Inicializa min com o maximum value vai reduzindo ao encontrar um valor menor.
+    *max = 0;         // Inicializa o max em 0 vai aumentando ao encontrar um valor maior.
     ///////////////////////
     for (int i = 0; i < PixMax; i++) {
         int pixel_value = img->pixel[i];
