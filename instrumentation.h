@@ -25,24 +25,26 @@
 /// Cpu time in seconds
 double cpu_time(void) ; ///
 
-/// Ten counters should be more than enough
+/// 10 counters deve ser o bastante
 #define NUMCOUNTERS 10
 
-/// Array of operation counters:
+/// Array da operação dos counters:
 extern unsigned long InstrCount[NUMCOUNTERS];  ///extern
 
-/// Array of names for the counters:
+/// Array dos nomes dos counters:
 extern char* InstrName[NUMCOUNTERS];  ///extern
 
 /// Cpu_time read on previous reset (~seconds)
 extern double InstrTime;  ///extern
 
-/// Calibrated Time Unit (in seconds, initially 1s)
+/// unidade de tempo calibrada (em segundos, inicialmente 1s)
 extern double InstrCTU;  ///extern
 
-/// Find the Calibrated Time Unit (CTU).
-/// Run and time a loop of basic memory and arithmetic operations to set
-/// a reasonably cpu-independent time unit.
+
+
+/// Encontre a Unidade de Tempo Calibrada (UTC).
+/// Execute e cronometre um loop de operações de memória e aritmética básicas
+/// para definir uma unidade de tempo razoavelmente independente da CPU.
 void InstrCalibrate(void) ;
 
 /// Reset counters to zero and store cpu_time.
