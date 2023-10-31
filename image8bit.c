@@ -297,6 +297,8 @@ void ImageStats(Image img, uint8* min, uint8* max) {
     *min = UINT8_MAX;  // Initialize min to the maximum value.
     *max = 0;         // Initialize max to 0.
     //////////////////////////////////
+
+    // InstrCount[0] will count pixel array acesses
     for (int i = 0; i < PixMax; i++) {
         int pixel_value = img->pixel[i];
         int pixel_min = img->pixel[0];
