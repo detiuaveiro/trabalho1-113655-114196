@@ -26,123 +26,122 @@
 #include <stdlib.h>
 #include "instrumentation.h"
 
-// The data structure
+// A estrutura de dados
 //
-// An image is stored in a structure containing 3 fields:
-// Two integers store the image width and height.
-// The other field is a pointer to an array that stores the 8-bit gray
-// level of each pixel in the image.  The pixel array is one-dimensional
-// and corresponds to a "raster scan" of the image from left to right,
-// top to bottom.
-// For example, in a 100-pixel wide image (img->width == 100),
-//   pixel position (x,y) = (33,0) is stored in img->pixel[33];
-//   pixel position (x,y) = (22,1) is stored in img->pixel[122].
-// 
-// Clients should use images only through variables of type Image,
-// which are pointers to the image structure, and should not access the
-// structure fields directly.
+// Uma imagem é armazenada em uma estrutura que contém 3 campos:
+// Dois inteiros armazenam a largura e altura da imagem.
+// O outro campo é um ponteiro para um array que armazena o nível de cinza de 8 bits
+// de cada pixel na imagem. O array de pixels é unidimensional
+// e corresponde a uma "varredura de matriz" da imagem da esquerda para a direita,
+// de cima para baixo.
+// Por exemplo, em uma imagem com 100 pixels de largura (img->width == 100),
+// a posição do pixel (x, y) = (33,0) é armazenada em img->pixel[33];
+// a posição do pixel (x, y) = (22,1) é armazenada em img->pixel[122].
+//
+// Os clientes devem usar imagens apenas por meio de variáveis do tipo Image,
+// que são ponteiros para a estrutura de imagem, e não devem acessar os
+// campos da estrutura diretamente.
 
-// Maximum value you can store in a pixel (maximum maxval accepted)
+
+//Valor máximo que você pode armazenar em um pixel (valor máximo aceitável)
 const uint8 PixMax = 255;
 
-// Internal structure for storing 8-bit graymap images
+ChatGPT
+
+// Estrutura interna para armazenar imagens em tons de cinza de 8 bits
 struct image {
   int width;
   int height;
-  int maxval;   // maximum gray value (pixels with maxval are pure WHITE)
-  uint8* pixel; // pixel data (a raster scan)
+  int maxval;   // valor máximo de cinza (pixels com maxval são puros BRANCOS)
+  uint8* pixel; // dados do pixel (uma varredura de matriz)
 };
 
 
-// This module follows "design-by-contract" principles.
-// Read `Design-by-Contract.md` for more details.
 
-/// Error handling functions
+// Este módulo segue os princípios de "design by contract".
+// Leia Design-by-Contract.md para obter mais detalhes.
 
-// In this module, only functions dealing with memory allocation or file
-// (I/O) operations use defensive techniques.
-// 
-// When one of these functions fails, it signals this by returning an error
-// value such as NULL or 0 (see function documentation), and sets an internal
-// variable (errCause) to a string indicating the failure cause.
-// The errno global variable thoroughly used in the standard library is
-// carefully preserved and propagated, and clients can use it together with
-// the ImageErrMsg() function to produce informative error messages.
-// The use of the GNU standard library error() function is recommended for
-// this purpose.
+/// Funções de tratamento de erro
+
+// Neste módulo, apenas funções que lidam com alocação de memória ou operações de arquivo
+// (I/O) usam técnicas defensivas.
 //
-// Additional information:  man 3 errno;  man 3 error;
-
-// Variable to preserve errno temporarily
+// Quando uma dessas funções falha, ela sinaliza isso retornando um valor de erro
+// como NULL ou 0 (veja a documentação da função), e define uma variável interna (errCause)
+// para uma string que indica a causa da falha.
+// A variável global errno, amplamente usada na biblioteca padrão, é
+// cuidadosamente preservada e propagada, e os clientes podem usá-la juntamente com
+// a função ImageErrMsg() para produzir mensagens de erro informativas.
+// O uso da função error() da biblioteca padrão GNU é recomendado para
+// esse propósito.
+//
+// Informações adicionais: man 3 errno; man 3 error;
 static int errsave = 0;
 
-// Error cause
+// Causa do erro
 static char* errCause;
-
-/// Error cause.
-/// After some other module function fails (and returns an error code),
-/// calling this function retrieves an appropriate message describing the
-/// failure cause.  This may be used together with global variable errno
-/// to produce informative error messages (using error(), for instance).
+/// Causa do erro.
+/// Após uma falha de alguma outra função do módulo (e o retorno de um código de erro),
+/// a chamada a esta função recupera uma mensagem apropriada descrevendo a
+/// causa da falha. Isso pode ser usado junto com a variável global errno
+/// para produzir mensagens de erro informativas (usando error(), por exemplo).
 ///
-/// After a successful operation, the result is not garanteed (it might be
-/// the previous error cause).  It is not meant to be used in that situation!
+/// Após uma operação bem-sucedida, o resultado não é garantido (pode ser
+/// a causa de erro anterior). Não se destina a ser usado nessa situação!
 char* ImageErrMsg() { ///
   return errCause;
 }
 
 
-// Defensive programming aids
+// Auxílios para programação defensiva
 //
-// Proper defensive programming in C, which lacks an exception mechanism,
-// generally leads to possibly long chains of function calls, error checking,
-// cleanup code, and return statements:
-//   if ( funA(x) == errorA ) { return errorX; }
-//   if ( funB(x) == errorB ) { cleanupForA(); return errorY; }
-//   if ( funC(x) == errorC ) { cleanupForB(); cleanupForA(); return errorZ; }
+// A programação defensiva adequada em C, que não possui um mecanismo de exceção,
+// geralmente resulta em possivelmente longas cadeias de chamadas de função, verificação de erros,
+// código de limpeza e instruções de retorno:
+// if (funA(x) == errorA) { return errorX; }
+// if (funB(x) == errorB) { cleanupForA(); return errorY; }
+// if (funC(x) == errorC) { cleanupForB(); cleanupForA(); return errorZ; }
 //
-// Understanding such chains is difficult, and writing them is boring, messy
-// and error-prone.  Programmers tend to overlook the intricate details,
-// and end up producing unsafe and sometimes incorrect programs.
+// Compreender essas cadeias é difícil e escrevê-las é entediante, confuso
+// e propenso a erros. Os programadores tendem a ignorar os detalhes intrincados,
+// e acabam produzindo programas inseguros e às vezes incorretos.
 //
-// In this module, we try to deal with these chains using a somewhat
-// unorthodox technique.  It resorts to a very simple internal function
-// (check) that is used to wrap the function calls and error tests, and chain
-// them into a long Boolean expression that reflects the success of the entire
-// operation:
-//   success = 
-//   check( funA(x) != error , "MsgFailA" ) &&
-//   check( funB(x) != error , "MsgFailB" ) &&
-//   check( funC(x) != error , "MsgFailC" ) ;
-//   if (!success) {
-//     conditionalCleanupCode();
-//   }
-//   return success;
-// 
-// When a function fails, the chain is interrupted, thanks to the
-// short-circuit && operator, and execution jumps to the cleanup code.
-// Meanwhile, check() set errCause to an appropriate message.
-// 
-// This technique has some legibility issues and is not always applicable,
-// but it is quite concise, and concentrates cleanup code in a single place.
-// 
-// See example utilization in ImageLoad and ImageSave.
+// Neste módulo, tentamos lidar com essas cadeias usando uma técnica um tanto
+// não convencional. Isso recorre a uma função interna muito simples
+// (verificar) que é usada para encapsular as chamadas de função e testes de erro e encadeá-los em uma longa expressão booleana
+// que reflete o sucesso da operação como um todo:
+// sucess =
+// check(funA(x) != erro, "MsgFailA") &&
+// check(funB(x) != erro, "MsgFailB") &&
+// check(funC(x) != erro, "MsgFailC");
+// if (!sucess) {
+// códigoDeLimpezaCondicional();
+// }
+// return sucess;
 //
-// (You are not required to use this in your code!)
+// Quando uma função falha, a cadeia é interrompida, graças ao
+// operador && de curto-circuito, e a execução pula para o código de limpeza.
+// Enquanto isso, a função verificar() define errCause para uma mensagem apropriada.
+//
+// Esta técnica tem algumas questões de legibilidade e nem sempre é aplicável,
+// mas é bastante concisa e concentra o código de limpeza em um único lugar.
+//
+// Veja exemplos de utilização em ImageLoad e ImageSave.
+//
+// (Você não é obrigado a usar isso em seu código!)
 
-
-// Check a condition and set errCause to failmsg in case of failure.
-// This may be used to chain a sequence of operations and verify its success.
-// Propagates the condition.
-// Preserves global errno!
+// Verifica uma condição e define errCause para failmsg em caso de falha.
+// Isso pode ser usado para encadear uma sequência de operações e verificar seu sucesso.
+// Propaga a condição.
+// Preserva o erro global!
 static int check(int condition, const char* failmsg) {
   errCause = (char*)(condition ? "" : failmsg);
   return condition;
 }
 
 
-/// Init Image library.  (Call once!)
-/// Currently, simply calibrate instrumentation and set names of counters.
+/// Inicializar a biblioteca de imagens. (Chame apenas uma vez!)
+/// Atualmente, simplesmente calibra a instrumentação e define os nomes dos contadores.
 void ImageInit(void) { ///
   InstrCalibrate();
   InstrName[0] = "pixmem";  // InstrCount[0] will count pixel array acesses
@@ -156,17 +155,16 @@ void ImageInit(void) { ///
 
 // TIP: Search for PIXMEM or InstrCount to see where it is incremented!
 
+/// Funções de gerenciamento de imagens
 
-/// Image management functions
-
-/// Create a new black image.
-///   width, height : the dimensions of the new image.
-///   maxval: the maximum gray level (corresponding to white).
-/// Requires: width and height must be non-negative, maxval > 0.
-/// 
-/// On success, a new image is returned.
-/// (The caller is responsible for destroying the returned image!)
-/// On failure, returns NULL and errno/errCause are set accordingly.
+/// Criar uma nova imagem preta.
+/// largura, altura: as dimensões da nova imagem.
+/// maxval: o nível de cinza máximo (correspondente ao branco).
+/// Requisitos: largura e altura devem ser não negativas, maxval > 0.
+///
+/// Em caso de sucesso, uma nova imagem é retornada.
+/// (O chamador é responsável por destruir a imagem retornada!)
+/// Em caso de falha, retorna NULL e errno/errCause são definidos adequadamente.
 Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (width >= 0);
   assert (height >= 0);
@@ -174,11 +172,11 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   // Insert your code here!
 }
 
-/// Destroy the image pointed to by (*imgp).
-///   imgp : address of an Image variable.
-/// If (*imgp)==NULL, no operation is performed.
-/// Ensures: (*imgp)==NULL.
-/// Should never fail, and should preserve global errno/errCause.
+/// Destruir a imagem apontada por (*imgp).
+/// imgp: endereço de uma variável de tipo Image.
+/// Se (*imgp) == NULL, nenhuma operação é realizada.
+/// Garante: (*imgp) == NULL.
+/// Não deve falhar e deve preservar o errno global/errCause.
 void ImageDestroy(Image* imgp) { ///
   assert (imgp != NULL);
   // Insert your code here!
@@ -190,9 +188,9 @@ void ImageDestroy(Image* imgp) { ///
 // See also:
 // PGM format specification: http://netpbm.sourceforge.net/doc/pgm.html
 
-// Match and skip 0 or more comment lines in file f.
-// Comments start with a # and continue until the end-of-line, inclusive.
-// Returns the number of comments skipped.
+// Encontre e pule 0 ou mais linhas de comentário no arquivo f.
+// Comentários começam com um # e continuam até o final da linha, inclusive.
+// Retorna o número de comentários pulados.
 static int skipComments(FILE* f) {
   char c;
   int i = 0;
@@ -202,11 +200,11 @@ static int skipComments(FILE* f) {
   return i;
 }
 
-/// Load a raw PGM file.
-/// Only 8 bit PGM files are accepted.
-/// On success, a new image is returned.
-/// (The caller is responsible for destroying the returned image!)
-/// On failure, returns NULL and errno/errCause are set accordingly.
+/// Carregar um arquivo PGM cru.
+/// Somente arquivos PGM de 8 bits são aceitos.
+/// Em caso de sucesso, uma nova imagem é retornada.
+/// (O chamador é responsável por destruir a imagem retornada!)
+/// Em caso de falha, retorna NULL e errno/errCause são definidos adequadamente.
 Image ImageLoad(const char* filename) { ///
   int w, h;
   int maxval;
@@ -241,10 +239,12 @@ Image ImageLoad(const char* filename) { ///
   return img;
 }
 
-/// Save image to PGM file.
-/// On success, returns nonzero.
-/// On failure, returns 0, errno/errCause are set appropriately, and
-/// a partial and invalid file may be left in the system.
+
+
+/// Salvar a imagem em um arquivo PGM.
+/// Em caso de sucesso, retorna um valor diferente de zero.
+/// Em caso de falha, retorna 0, e errno/errCause são definidos apropriadamente,
+/// e um arquivo parcial e inválido pode ser deixado no sistema
 int ImageSave(Image img, const char* filename) { ///
   assert (img != NULL);
   int w = img->width;
@@ -286,11 +286,11 @@ int ImageMaxval(Image img) { ///
   return img->maxval;
 }
 
-/// Pixel stats
-/// Find the minimum and maximum gray levels in image.
-/// On return,
-/// *min is set to the minimum gray level in the image,
-/// *max is set to the maximum.
+/// Estatísticas de pixels
+/// Encontra os níveis de cinza mínimo e máximo na imagem.
+/// Após a execução,
+/// *min é definido como o nível de cinza mínimo na imagem,
+/// *max é definido como o máximo.
 void ImageStats(Image img, uint8* min, uint8* max) { ///
   assert (img != NULL);
   // Insert your code here!
@@ -309,15 +309,14 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
 }
 
 /// Pixel get & set operations
+/// Estas são operações primitivas para acessar e modificar um único pixel
+/// na imagem.
+/// São operações muito simples, mas fundamentais, que podem ser usadas para
+/// implementar operações mais complexas.
 
-/// These are the primitive operations to access and modify a single pixel
-/// in the image.
-/// These are very simple, but fundamental operations, which may be used to 
-/// implement more complex operations.
-
-// Transform (x, y) coords into linear pixel index.
-// This internal function is used in ImageGetPixel / ImageSetPixel. 
-// The returned index must satisfy (0 <= index < img->width*img->height)
+// Transforma as coordenadas (x, y) em um índice linear de pixel.
+// Esta função interna é usada em ImageGetPixel / ImageSetPixel.
+// O índice retornado deve satisfazer (0 <= índice < img->width*img->height)
 static inline int G(Image img, int x, int y) {
   int index;
   // Insert your code here!
@@ -344,89 +343,88 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 
 /// Pixel transformations
 
-/// These functions modify the pixel levels in an image, but do not change
-/// pixel positions or image geometry in any way.
-/// All of these functions modify the image in-place: no allocation involved.
-/// They never fail.
+/// Essas funções modificam os níveis de pixel em uma imagem, mas não alteram
+/// as posições dos pixels ou a geometria da imagem de nenhuma forma.
+/// Todas essas funções modificam a imagem no local: nenhuma alocação é envolvida.
+/// Elas nunca falham.
 
-
-/// Transform image to negative image.
-/// This transforms dark pixels to light pixels and vice-versa,
-/// resulting in a "photographic negative" effect.
+/// Transforma a imagem em uma imagem negativa.
+/// Isso transforma pixels escuros em pixels claros e vice-versa,
+/// resultando em um efeito de "negativo fotográfico".
 void ImageNegative(Image img) { ///
   assert (img != NULL);
   // Insert your code here!
 }
 
-/// Apply threshold to image.
-/// Transform all pixels with level<thr to black (0) and
-/// all pixels with level>=thr to white (maxval).
+
+/// Aplicar um limite à imagem.
+/// Transforma todos os pixels com nível<limiar em preto (0) e
+/// todos os pixels com nível>=limiar em branco (maxval).
 void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
   // Insert your code here!
 }
 
-/// Brighten image by a factor.
-/// Multiply each pixel level by a factor, but saturate at maxval.
-/// This will brighten the image if factor>1.0 and
-/// darken the image if factor<1.0.
+
+
+/// Clarear a imagem por um fator.
+/// Multiplica cada nível de pixel por um fator, mas satura em maxval.
+/// Isso clareará a imagem se o fator for>1.0 e
+/// escurecerá a imagem se o fator for<1.0.
 void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
   // ? assert (factor >= 0.0);
   // Insert your code here!
 }
 
+/// Transformações geométricas
 
-/// Geometric transformations
+/// Estas funções aplicam transformações geométricas a uma imagem,
+/// retornando uma nova imagem como resultado.
+///
+/// Sucesso e falha são tratados como em ImageCreate:
+/// Em caso de sucesso, uma nova imagem é retornada.
+/// (O chamador é responsável por destruir a imagem retornada!)
+/// Em caso de falha, retorna NULL e errno/errCause são definidos adequadamente.
 
-/// These functions apply geometric transformations to an image,
-/// returning a new image as a result.
-/// 
-/// Success and failure are treated as in ImageCreate:
-/// On success, a new image is returned.
-/// (The caller is responsible for destroying the returned image!)
-/// On failure, returns NULL and errno/errCause are set accordingly.
+// Dica de implementação:
+// Chame ImageCreate sempre que precisar de uma nova imagem!
 
-// Implementation hint: 
-// Call ImageCreate whenever you need a new image!
-
-/// Rotate an image.
-/// Returns a rotated version of the image.
-/// The rotation is 90 degrees clockwise.
-/// Ensures: The original img is not modified.
-/// 
-/// On success, a new image is returned.
-/// (The caller is responsible for destroying the returned image!)
-/// On failure, returns NULL and errno/errCause are set accordingly.
+/// Girar uma imagem.
+/// Retorna uma versão girada da imagem.
+/// A rotação é de 90 graus no sentido horário.
+/// Garante: A imagem original não é modificada.
+///
+/// Em caso de sucesso, uma nova imagem é retornada.
+/// (O chamador é responsável por destruir a imagem retornada!)
+/// Em caso de falha, retorna NULL e errno/errCause são definidos adequadamente.
 Image ImageRotate(Image img) { ///
   assert (img != NULL);
   // Insert your code here!
 }
-
-/// Mirror an image = flip left-right.
-/// Returns a mirrored version of the image.
-/// Ensures: The original img is not modified.
-/// 
-/// On success, a new image is returned.
-/// (The caller is responsible for destroying the returned image!)
-/// On failure, returns NULL and errno/errCause are set accordingly.
+/// Espelhar uma imagem = inverter da esquerda para a direita.
+/// Retorna uma versão espelhada da imagem.
+/// Garante: A imagem original não é modificada.
+///
+/// Em caso de sucesso, uma nova imagem é retornada.
+/// (O chamador é responsável por destruir a imagem retornada!)
+/// Em caso de falha, retorna NULL e errno/errCause são definidos adequadamente.
 Image ImageMirror(Image img) { ///
   assert (img != NULL);
   // Insert your code here!
 }
-
-/// Crop a rectangular subimage from img.
-/// The rectangle is specified by the top left corner coords (x, y) and
-/// width w and height h.
-/// Requires:
-///   The rectangle must be inside the original image.
-/// Ensures:
-///   The original img is not modified.
-///   The returned image has width w and height h.
-/// 
-/// On success, a new image is returned.
-/// (The caller is responsible for destroying the returned image!)
-/// On failure, returns NULL and errno/errCause are set accordingly.
+/// Recortar uma subimagem retangular de img.
+/// O retângulo é especificado pelas coordenadas do canto superior esquerdo (x, y) e
+/// largura w e altura h.
+/// Requisitos:
+/// O retângulo deve estar dentro da imagem original.
+/// Garante:
+/// A imagem original não é modificada.
+/// A imagem retornada tem largura w e altura h.
+///
+/// Em caso de sucesso, uma nova imagem é retornada.
+/// (O chamador é responsável por destruir a imagem retornada!)
+/// Em caso de falha, retorna NULL e errno/errCause são definidos adequadamente.
 Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   assert (ImageValidRect(img, x, y, w, h));
@@ -434,46 +432,42 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
 }
 
 
-/// Operations on two images
 
-/// Paste an image into a larger image.
-/// Paste img2 into position (x, y) of img1.
-/// This modifies img1 in-place: no allocation involved.
-/// Requires: img2 must fit inside img1 at position (x, y).
+/// Colar uma imagem em uma imagem maior.
+/// Cole img2 na posição (x, y) de img1.
+/// Isso modifica img1 no local: nenhuma alocação é envolvida.
+/// Requisitos: img2 deve caber dentro de img1 na posição (x, y).
 void ImagePaste(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   // Insert your code here!
 }
-
-/// Blend an image into a larger image.
-/// Blend img2 into position (x, y) of img1.
-/// This modifies img1 in-place: no allocation involved.
-/// Requires: img2 must fit inside img1 at position (x, y).
-/// alpha usually is in [0.0, 1.0], but values outside that interval
-/// may provide interesting effects.  Over/underflows should saturate.
+/// Misturar uma imagem em uma imagem maior.
+/// Misture img2 na posição (x, y) de img1.
+/// Isso modifica img1 no local: nenhuma alocação é envolvida.
+/// Requisitos: img2 deve caber dentro de img1 na posição (x, y).
+/// Geralmente, o alpha está no intervalo de [0.0, 1.0], mas valores fora desse intervalo
+/// podem proporcionar efeitos interessantes. Os estouros/subestouros devem saturar.
 void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   // Insert your code here!
 }
-
-/// Compare an image to a subimage of a larger image.
-/// Returns 1 (true) if img2 matches subimage of img1 at pos (x, y).
-/// Returns 0, otherwise.
+/// Comparar uma imagem a uma subimagem de uma imagem maior.
+/// Retorna 1 (verdadeiro) se img2 corresponder à subimagem de img1 na posição (x, y).
+/// Retorna 0, caso contrário.
 int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
   // Insert your code here!
 }
-
-/// Locate a subimage inside another image.
-/// Searches for img2 inside img1.
-/// If a match is found, returns 1 and matching position is set in vars (*px, *py).
-/// If no match is found, returns 0 and (*px, *py) are left untouched.
+/// Localizar uma subimagem dentro de outra imagem.
+/// Procura por img2 dentro de img1.
+/// Se uma correspondência for encontrada, retorna 1 e a posição correspondente é definida nas variáveis (*px, *py).
+/// Se nenhuma correspondência for encontrada, retorna 0 e (*px, *py) permanecem inalterados.
 int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
@@ -482,11 +476,10 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
 
 
 /// Filtering
-
-/// Blur an image by a applying a (2dx+1)x(2dy+1) mean filter.
-/// Each pixel is substituted by the mean of the pixels in the rectangle
+/// Desfocar uma imagem aplicando um filtro de média (2dx+1)x(2dy+1).
+/// Cada pixel é substituído pela média dos pixels no retângulo
 /// [x-dx, x+dx]x[y-dy, y+dy].
-/// The image is changed in-place.
+/// A imagem é alterada no local.
 void ImageBlur(Image img, int dx, int dy) { ///
   // Insert your code here!
 }
