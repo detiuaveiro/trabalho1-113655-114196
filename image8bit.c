@@ -166,11 +166,56 @@ void ImageInit(void) { ///
 /// (O chamador é responsável por destruir a imagem retornada!)
 /// Em caso de falha, retorna NULL e errno/errCause são definidos adequadamente.
 Image ImageCreate(int width, int height, uint8 maxval) { ///
-  assert (width >= 0);
-  assert (height >= 0);
-  assert (0 < maxval && maxval <= PixMax);
-  // Insert your code here!
+
+    assert (width >= 0);
+    assert (height >= 0);
+    assert (0 < maxval && maxval <= PixMax);
+    // Insert your code here!
+
+    if (width < 0 || height < 0 || maxval < 0) {
+        printf("Erro na criação da imagem");
+        errno = EINVAL;
+        return NULL;
+    }
+
+    Image img = malloc(sizeof(struct image));
+    img->width = width;
+    img->height = height;
+    img->maxval = maxval;
+    img->pixel = malloc(sizeof(uint8) * width * height);
+
+
+    if (img == NULL) {
+        errno = ENOMEM; // Define errno para indicar um erro de falta de memória.
+        return NULL;
+    }
+    if (img->pixel == NULL) {
+        free(img); // Liberta a memória alocada para a estrutura da imagem.
+        errno = ENOMEM; // Define errno para indicar um erro de falta de memória.
+        return NULL;
+    }
+
+    // Inicializador da imagem preta.
+    for (int i = 0; i < width * height; i++) {
+        img->pixel[i] = 0; //cada pixel será preto
+    }
+
+    return img;
 }
+
+    //printf("Que altura deseja para a imagem?");
+    //scanf("%d", &height);
+    //printf("Que largura deseja para a imagem?");
+    //scanf("%d", &width);
+    //printf("Qual o valor máximo de cinza?");
+    //scanf("%d", &maxval);
+    //printf("A imagem tem %d de altura, %d de largura e %d de valor máximo de cinza foi criada com sucesso", height, width, maxval);
+    //return img;
+
+
+
+    //não sei se e aqui os prints
+
 
 /// Destruir a imagem apontada por (*imgp).
 /// imgp: endereço de uma variável de tipo Image.
@@ -180,6 +225,15 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 void ImageDestroy(Image* imgp) { ///
   assert (imgp != NULL);
   // Insert your code here!
+    if (*imgp != NULL) {
+        free((*imgp)->pixel);
+        free(*imgp);
+        *imgp = NULL;
+
+    }
+    else {
+        errno = EINVAL;
+    }
 }
 
 
@@ -297,7 +351,7 @@ void ImageStats(Image img, uint8* min, uint8* max) {
     //ver melhor não corrigido
 
     *min = UINT8_MAX;  // Inicializa min com o maximum value vai reduzindo ao encontrar um valor menor.
-    *max = 0;         // Inicializa o max em 0 vai aumentando ao encontrar um valor maior.
+    *max = 0;         // Inicializa  max em 0 vai aumentando ao encontrar um valor maior.
     ///////////////////////
     for (int i = 0; i < PixMax; i++) {
         int pixel_value = img->pixel[i];
@@ -377,7 +431,17 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 void ImageNegative(Image img) { ///
   assert (img != NULL);
   // Insert your code here!
-}
+  for (int i = 0; i < img->width * img->height; i++) {
+      if (img->pixel[i] == 0) { /// se o pixel for preto
+          img->pixel[i] = img->maxval; ////pixel passa a branco
+      }
+      else {
+          img->pixel[i] = 0; //vice-versa
+      }
+      }
+
+  }
+
 
 
 /// Aplicar um limite à imagem.
