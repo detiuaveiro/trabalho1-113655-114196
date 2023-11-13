@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <error.h>
+#include "error.h"
 #include <assert.h>
 
 #include "image8bit.h"
@@ -77,15 +77,16 @@ static char* errors[] = {
 };
 
 
-// Este programa busca a correção e a robustez.
-// Você pode querer comentar temporariamente a validação de operações, ou seja,
-// verificações de pré-condições, para que você possa forçar violações de pré-condições e
-// observar o efeito das asserções.
+// This program strives for correctness and robustness.
+// You may want to temporarily comment out operand validation, namely
+// precondition checks, so that you can force precondition violations, and
+// observe the effect of assertions.
 //
-// Além disso, o programa não testa todas as funções dos módulos, mas você pode facilmente
-// adicionar novas operações para esse fim.
+// Also, the program does not test every module function, but you may easily
+// add new operations for that purpose.
 
 int main(int ac, char* av[]) {
+  program_name = av[0];
   if (ac <= 1) {
     error(5, 0, "\n%s", USAGE);
   }
@@ -216,7 +217,7 @@ int main(int ac, char* av[]) {
     k++;
   }
   
-  // destroi as imagens restantes
+  // Destroy remaining images
   while (n > 0) {
     ImageDestroy(&img[--n]);
   }
