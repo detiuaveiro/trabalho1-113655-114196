@@ -173,6 +173,18 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
   // Insert your code here!
+
+
+    Image img = malloc(sizeof(struct image));
+    img->width = width;
+    img->height = height;
+    img->maxval = maxval;
+    img->pixel = malloc(sizeof(uint8) * width * height);
+  for (int i = 0; i < width*height; i++) {
+    img->pixel[i] = 0; //cada picel em preto
+
+  }
+  return img;
 }
 
 /// Destroy the image pointed to by (*imgp).
@@ -183,7 +195,17 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 void ImageDestroy(Image* imgp) { ///
   assert (imgp != NULL);
   // Insert your code here!
+    if (*imgp != NULL) {
+        free((*imgp)->pixel);//libertar o array de pixeis
+        free(*imgp);//libertar a estrutura
+        *imgp = NULL;//completamente apagado
+
+    }
+    else {
+        errno = EINVAL;
+    }
 }
+
 
 
 /// PGM file operations
