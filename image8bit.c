@@ -327,7 +327,26 @@ int ImageMaxval(Image img) { ///
 void ImageStats(Image img, uint8* min, uint8* max) { ///
   assert (img != NULL);
   // Insert your code here!
+
+        //ver melhor estes inicializadores codigo ainda não corrigido
+    *min = UINT8_MAX;  // Initialize min to the maximum value.
+    *max = 0;         // Initialize max to 0.
+    //////////////////////////////////
+    for (int i = 0; i < PixMax; i++) {
+        int pixel_value = img->pixel[i];
+        int pixel_min = img->pixel[0];
+        int pixel_max = img->maxval;
+
+        if (pixel_value < *min)
+            *min = pixel_min;
+        if (pixel_value > *max)
+            *max = pixel_max;
+    }
+
+    printf("min: %d\n", *min);
+    printf("max: %d\n", *max);
 }
+
 
 /// Check if pixel position (x,y) is inside img.
 int ImageValidPos(Image img, int x, int y) { ///
@@ -339,6 +358,7 @@ int ImageValidPos(Image img, int x, int y) { ///
 int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   // Insert your code here!
+    return (0 <= x && x+w <= img->width) && (0 <= y && y+h <= img->height);
 }
 
 /// Pixel get & set operations
