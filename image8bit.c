@@ -174,11 +174,7 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (0 < maxval && maxval <= PixMax);
 
   Image img = calloc(1,sizeof(struct image));
-  if(img == NULL){
-    errno = ENOMEM;
-    errCause = "Error allocating memory for the image struct.";
-    return NULL;
-  }
+  check(img != NULL,"Error allocating memory for the image struct.");
 
   img->pixel = (uint8*)malloc(width*height*sizeof(uint8));
 
@@ -338,6 +334,15 @@ void ImageStats(Image img, uint8* min, uint8* max) { ///
     if (currentPixel > *max)
         *max = currentPixel;
   }
+  //for(int i = 1; i<img->width;i++){
+  //  for(int j = 1;j<img->height;j++){
+  //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
+  //    if (currentPixel < *min)
+  //      *min = currentPixel;
+  //    if (currentPixel > *max)
+  //      *max = currentPixel;
+  //  }
+  //}
 }
 
 
@@ -350,7 +355,6 @@ int ImageValidPos(Image img, int x, int y) { ///
 /// Check if rectangular area (x,y,w,h) is completely inside img.
 int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
-  // Insert your code here!
   return (0 <= x && x+w <= img->width) && (0 <= y && y+h <= img->height);
 }
 
@@ -364,7 +368,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
 // Transform (x, y) coords into linear pixel index.
 // This internal function is used in ImageGetPixel / ImageSetPixel. 
 // The returned index must satisfy (0 <= index < img->width*img->height)
-static inline int G(Image img, int x, int y) {
+static inline int G(Image img, int x, int y) { ///
   int index;
   index = y*img->width + x;
   assert (0 <= index && index < img->width*img->height);
@@ -401,7 +405,18 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 /// resulting in a "photographic negative" effect.
 void ImageNegative(Image img) { ///
   assert (img != NULL);
-  // Insert your code here!
+  
+  int index = img->width * img->height;
+
+  for (int i = 0; i < index; i++) {
+    img->pixel[i] = PixMax - img->pixel[i];
+  }
+  //for(int i = 0; i<img->width;i++){
+  //  for(int j = 0;j<img->height;j++){
+  //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
+  //    ImageSetPixel(img,i,j,PixMax-currentPixel);
+  //  }
+  //}
 }
 
 /// Apply threshold to image.
@@ -409,17 +424,55 @@ void ImageNegative(Image img) { ///
 /// all pixels with level>=thr to white (maxval).
 void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
-  // Insert your code here!
-}
+  check(0 <= thr && thr <= PixMax, "Invalid threshold value");
+  int index = img->width * img->height;
 
+  for(int i = 0; i < index; i++){
+    if(img->pixel[i] < thr){
+      img->pixel[i] = 0;
+    }else{
+      img->pixel[i] = img->maxval;
+    }
+  }
+  //for(int i = 0; i<img->width;i++){
+  //  for(int j = 0;j<img->height;j++){
+  //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
+  //    if(currentPixel < thr){
+  //      ImageSetPixel(img,i,j,0);
+  //    }else{
+  //      ImageSetPixel(img,i,j,img->maxval);
+  //    }
+  //  }
+  //}
+}
 /// Brighten image by a factor.
 /// Multiply each pixel level by a factor, but saturate at maxval.
 /// This will brighten the image if factor>1.0 and
 /// darken the image if factor<1.0.
 void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
-  // ? assert (factor >= 0.0);
-  // Insert your code here!
+  assert (factor >= 0.0);
+  
+  int index = img->width * img->height;
+
+  for(int i = 0; i <= index; i++){
+    double newPixelValue = img->pixel[i] * factor;
+    if(newPixelValue > img->maxval){
+      img->pixel[i] = img->maxval;              //erro aqui
+    }else{
+      img->pixel[i] = newPixelValue;
+    }
+  }
+  //for(int i = 0; i<img->width;i++){
+  //  for(int j = 0;j<img->height;j++){
+  //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
+  //    if(currentPixel * factor > img->maxval){
+  //      ImageSetPixel(img,i,j,img->maxval);
+  //    }else{
+  //      ImageSetPixel(img,i,j,currentPixel * factor);
+  //    }
+  //  }
+  //}
 }
 
 
