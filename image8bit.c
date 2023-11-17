@@ -627,7 +627,16 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
-  // Insert your code here!
+  assert (ImageValidRect(img1, x, y, img2->width, img2->height));
+
+  for(int i = 0; i < img2->height; i++){
+    for(int j = 0; j < img2->width; j++){
+      if(img1->pixel[G(img1,x+j,y+i)] != img2->pixel[G(img2,j,i)]){
+        return 0; //Se um pixel for diferente, logo retorna 0 porque a subImagem não é igual à imagem
+      }
+    }
+  }
+  return 1; //Se a subImage for igual a uma parte da imagem retorna 1
 }
 
 /// Locate a subimage inside another image.
