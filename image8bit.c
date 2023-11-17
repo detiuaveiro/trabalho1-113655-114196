@@ -206,9 +206,8 @@ void ImageDestroy(Image* imgp) { ///
   }
 
   free((*imgp)->pixel);
-  *imgp = NULL;
   free(*imgp);
-  imgp = NULL;
+  *imgp = NULL;
 
 }
 
@@ -499,7 +498,23 @@ void ImageBrighten(Image img, double factor) { ///
 /// On failure, returns NULL and errno/errCause are set accordingly.
 Image ImageRotate(Image img) { ///
   assert (img != NULL);
-  // Insert your code here!
+
+  Image rotatedImage = ImageCreate(img->height,img->width,img->maxval);
+  if(rotatedImage == NULL){
+    errno = ENOMEM;
+    errCause = "Error allocating memory for the rotated image.";
+    return NULL;
+  }
+
+  for(int y = 0; y < img->height; y++){
+    for(int x = 0; x < img->width; x++){
+      int rotatedX = y;
+      int rotatedY = img->width - x - 1;
+      rotatedImage->pixel[G(rotatedImage,rotatedX,rotatedY)] = img->pixel[G(img,x,y)];
+    }
+  }
+
+  return rotatedImage;
 }
 
 /// Mirror an image = flip left-right.
