@@ -526,7 +526,22 @@ Image ImageRotate(Image img) { ///
 /// On failure, returns NULL and errno/errCause are set accordingly.
 Image ImageMirror(Image img) { ///
   assert (img != NULL);
-  // Insert your code here!
+  
+  Image mirroredImage = ImageCreate(img->width,img->height,img->maxval);
+  if(mirroredImage == NULL){
+    errno = ENOMEM;
+    errCause = "Error allocating memory for the mirrored image.";
+    return NULL;
+  }
+
+  for(int y = 0; y < img->height; y++){
+    for(int x = 0; x < img->width; x++){
+      int mirroredX = img->width - x - 1;
+      int mirroredY = y;
+      mirroredImage->pixel[G(mirroredImage,mirroredX,mirroredY)] = img->pixel[G(img,x,y)];
+    }
+  }
+  return mirroredImage;
 }
 
 /// Crop a rectangular subimage from img.
