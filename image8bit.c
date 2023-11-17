@@ -455,21 +455,21 @@ void ImageBrighten(Image img, double factor) { ///
   
   int index = img->width * img->height;
 
-  for(int i = 0; i <= index; i++){
-    double newPixelValue = img->pixel[i] * factor;
-    if(newPixelValue > img->maxval){
-      img->pixel[i] = img->maxval;              //erro aqui
+  for(int i = 0; i < index; i++){
+    int newRoundedPixelValue = (int)(img->pixel[i] * factor + 0.5);
+    if(newRoundedPixelValue > img->maxval){
+      img->pixel[i] = img->maxval;              
     }else{
-      img->pixel[i] = newPixelValue;
+      img->pixel[i] = newRoundedPixelValue;
     }
   }
   //for(int i = 0; i<img->width;i++){
   //  for(int j = 0;j<img->height;j++){
   //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
-  //    if(currentPixel * factor > img->maxval){
+  //    if((int)(currentPixel * factor + 0.5) > img->maxval){
   //      ImageSetPixel(img,i,j,img->maxval);
   //    }else{
-  //      ImageSetPixel(img,i,j,currentPixel * factor);
+  //      ImageSetPixel(img,i,j,(int)(currentPixel * factor + 0.5));
   //    }
   //  }
   //}
