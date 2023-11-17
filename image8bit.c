@@ -605,7 +605,19 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-  // Insert your code here!
+  assert (0.0 <= alpha && alpha <= 1.0);
+
+  for(int i = 0; i < img2->height; i++){
+    for(int j = 0; j < img2->width; j++){
+      int newRoundedPixelValue = (int)(img1->pixel[G(img1,x+j,y+i)] * (1-alpha) + img2->pixel[G(img2,j,i)] * alpha + 0.5);
+      if(newRoundedPixelValue > img1->maxval){
+        img1->pixel[G(img1,x+j,y+i)] = img1->maxval;              
+      }else{
+        img1->pixel[G(img1,x+j,y+i)] = newRoundedPixelValue;
+      }
+    }
+  }
+  return img1;
 }
 
 /// Compare an image to a subimage of a larger image.
