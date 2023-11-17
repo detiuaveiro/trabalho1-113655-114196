@@ -559,7 +559,20 @@ Image ImageMirror(Image img) { ///
 Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   assert (ImageValidRect(img, x, y, w, h));
-  // Insert your code here!
+  
+  Image croppedImage = ImageCreate(w,h,img->maxval);
+  if(croppedImage == NULL){
+    errno = ENOMEM;
+    errCause = "Error allocating memory for the cropped image.";
+    return NULL;
+  }
+
+  for(int i = 0; i < h; i++){
+    for(int j = 0; j < w; j++){
+      croppedImage->pixel[G(croppedImage,j,i)] = img->pixel[G(img,x+j,y+i)];
+    }
+  }
+  return croppedImage;
 }
 
 
