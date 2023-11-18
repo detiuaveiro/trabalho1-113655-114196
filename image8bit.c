@@ -688,40 +688,40 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 void ImageBlur(Image img, int dx, int dy) {
-  assert(img != NULL);
-  assert(dx >= 0 && dy >= 0);
-  InstrCount[9]++;
-  Image tempImg = ImageCreate(img->width, img->height, img->maxval); //Cria uma imagem temporária para guardar os valores da imagem original
+    assert(img != NULL);
+    assert(dx >= 0 && dy >= 0);
+    InstrCount[9]++;
+    Image tempImg = ImageCreate(img->width, img->height,
+                                img->maxval); //Cria uma imagem temporária para guardar os valores da imagem original
 
-  for (int y = 0; y < img->height; y++) {
-    for (int x = 0; x < img->width; x++) {
-      double sum = 0;
-      int count = 0;
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            double sum = 0;
+            int count = 0;
 
-      for (int i = -dy; i <= dy; i++) {
-        for (int j = -dx; j <= dx; j++) {
-          if (ImageValidPos(img, x + j, y + i)) { //Verifica se o pixel atual está dentro da imagem
-            sum += img->pixel[G(img, x + j, y + i)];  //Soma todos os pixeis à volta do pixel atual
-            count++;
-          }
+            for (int i = -dy; i <= dy; i++) {
+                for (int j = -dx; j <= dx; j++) {
+                    if (ImageValidPos(img, x + j, y + i)) { //Verifica se o pixel atual está dentro da imagem
+                        sum += img->pixel[G(img, x + j, y + i)];  //Soma todos os pixeis à volta do pixel atual
+                        count++;
+                    }
+                }
+            }
+
+            if (count > 0) { //Se count for 0, significa que não há pixeis à volta do pixel atual
+                tempImg->pixel[G(tempImg, x, y)] = (int) (sum / count + 0.5); //Arredondamento
+            } else {
+                tempImg->pixel[G(tempImg, x, y)] = 0;
+            }
         }
-      }
-
-      if (count > 0) { //Se count for 0, significa que não há pixeis à volta do pixel atual
-        tempImg->pixel[G(tempImg, x, y)] = (int)(sum / count + 0.5); //Arredondamento
-      } else {
-        tempImg->pixel[G(tempImg, x, y)] = 0; 
-      }
     }
-  }
-
-  for (int y = 0; y < img->height; y++) {
-    for (int x = 0; x < img->width; x++) {
-      img->pixel[G(img, x, y)] = tempImg->pixel[G(tempImg, x, y)]; //Substitui os valores da imagem original pelos valores da imagem temporária
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            img->pixel[G(img, x, y)] = tempImg->pixel[G(tempImg, x, y)]; //Substitui os valores da imagem original pelos valores da imagem temporária
+        }
     }
-    free(tempImg);
-  }
 
-  ImageDestroy(&tempImg);
+    ImageDestroy(&tempImg);
 
+}
 }
