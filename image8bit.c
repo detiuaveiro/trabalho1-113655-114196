@@ -705,4 +705,6 @@ void ImageBlur(Image img, int dx, int dy) {
     }
   }
 
+  ImageDestroy(&tempImg);
+
 }
