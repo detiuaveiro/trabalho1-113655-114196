@@ -147,8 +147,15 @@ static int check(int condition, const char* failmsg) {
 void ImageInit(void) { ///
   InstrCalibrate();
   InstrName[0] = "pixmem";  // InstrCount[0] will count pixel array acesses
-  // Name other counters here...
-  
+  InstrName[1] = "negative";
+  InstrName[2] = "threshold";
+  InstrName[3] = "brighten";
+  InstrName[4] = "rotate";
+  InstrName[5] = "mirror";
+  InstrName[6] = "crop";
+  InstrName[7] = "blend";
+  InstrName[8] = "locate";
+  InstrName[9] = "blur";
 }
 
 // Macros to simplify accessing instrumentation counters:
@@ -404,25 +411,30 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 /// resulting in a "photographic negative" effect.
 void ImageNegative(Image img) { ///
   assert (img != NULL);
+  InstrCount[1]++;
   
   int index = img->width * img->height;
 
   for (int i = 0; i < index; i++) {
     img->pixel[i] = PixMax - img->pixel[i];
   }
+
+}
   //for(int i = 0; i<img->width;i++){
   //  for(int j = 0;j<img->height;j++){
   //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
   //    ImageSetPixel(img,i,j,PixMax-currentPixel);
   //  }
   //}
-}
+
+
 
 /// Apply threshold to image.
 /// Transform all pixels with level<thr to black (0) and
 /// all pixels with level>=thr to white (maxval).
 void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
+    InstrCount[2]++;
   check(0 <= thr && thr <= PixMax, "Invalid threshold value");
   int index = img->width * img->height;
 
@@ -433,6 +445,8 @@ void ImageThreshold(Image img, uint8 thr) { ///
       img->pixel[i] = img->maxval;
     }
   }
+
+}
   //for(int i = 0; i<img->width;i++){
   //  for(int j = 0;j<img->height;j++){
   //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
@@ -443,7 +457,6 @@ void ImageThreshold(Image img, uint8 thr) { ///
   //    }
   //  }
   //}
-}
 /// Brighten image by a factor.
 /// Multiply each pixel level by a factor, but saturate at maxval.
 /// This will brighten the image if factor>1.0 and
@@ -451,7 +464,7 @@ void ImageThreshold(Image img, uint8 thr) { ///
 void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
   assert (factor >= 0.0);
-  
+  InstrCount[3]++;
   int index = img->width * img->height;
 
   for(int i = 0; i < index; i++){
@@ -498,6 +511,7 @@ void ImageBrighten(Image img, double factor) { ///
 /// On failure, returns NULL and errno/errCause are set accordingly.
 Image ImageRotate(Image img) { ///
   assert (img != NULL);
+  InstrCount[4]++;
 
   Image rotatedImage = ImageCreate(img->height,img->width,img->maxval);
   if(rotatedImage == NULL){
@@ -513,8 +527,8 @@ Image ImageRotate(Image img) { ///
       rotatedImage->pixel[G(rotatedImage,rotatedX,rotatedY)] = img->pixel[G(img,x,y)];
     }
   }
-
   return rotatedImage;
+
 }
 
 /// Mirror an image = flip left-right.
@@ -525,6 +539,7 @@ Image ImageRotate(Image img) { ///
 /// (The caller is responsible for destroying the returned image!)
 /// On failure, returns NULL and errno/errCause are set accordingly.
 Image ImageMirror(Image img) { ///
+InstrCount[5]++;
   assert (img != NULL);
   
   Image mirroredImage = ImageCreate(img->width,img->height,img->maxval);
@@ -559,7 +574,7 @@ Image ImageMirror(Image img) { ///
 Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   assert (ImageValidRect(img, x, y, w, h));
-  
+  InstrCount[6]++;
   Image croppedImage = ImageCreate(w,h,img->maxval);
   if(croppedImage == NULL){
     errno = ENOMEM;
@@ -605,6 +620,7 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   assert (0.0 <= alpha && alpha <= 1.0);
+  InstrCount[7]++;
 
   for(int i = 0; i < img2->height; i++){
     for(int j = 0; j < img2->width; j++){
@@ -645,8 +661,9 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
   assert(img1 != NULL);
   assert(img2 != NULL);
   assert((px != NULL) && (py != NULL));
+  InstrCount[8]++;
 
-  int matchFound = 0;
+    int matchFound = 0;
 
   for (int y = 0; y <= img1->height - img2->height; y++){
     for (int x = 0; x <= img1->width - img2->width; x++){
@@ -663,7 +680,6 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
     return matchFound;
   }
   return 0;
-}
 
 /// Filtering
 
@@ -674,7 +690,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
 void ImageBlur(Image img, int dx, int dy) {
   assert(img != NULL);
   assert(dx >= 0 && dy >= 0);
-
+  InstrCount[9]++;
   Image tempImg = ImageCreate(img->width, img->height, img->maxval); //Cria uma imagem temporária para guardar os valores da imagem original
 
   for (int y = 0; y < img->height; y++) {
@@ -703,6 +719,7 @@ void ImageBlur(Image img, int dx, int dy) {
     for (int x = 0; x < img->width; x++) {
       img->pixel[G(img, x, y)] = tempImg->pixel[G(tempImg, x, y)]; //Substitui os valores da imagem original pelos valores da imagem temporária
     }
+    free(tempImg);
   }
 
   ImageDestroy(&tempImg);
