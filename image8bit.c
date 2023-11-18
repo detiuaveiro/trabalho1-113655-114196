@@ -662,6 +662,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
     }
     return matchFound;
   }
+  return 0;
 }
 
 /// Filtering
