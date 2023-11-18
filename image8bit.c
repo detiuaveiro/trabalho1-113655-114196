@@ -569,7 +569,7 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
 
   for(int i = 0; i < h; i++){
     for(int j = 0; j < w; j++){
-      croppedImage->pixel[G(croppedImage,j,i)] = img->pixel[G(img,x+j,y+i)];
+      croppedImage->pixel[G(croppedImage,j,i)] = img->pixel[G(img,x+j,y+i)]; //Se encontrar uma subImagem igual à imagem, logo retorna 1 e guarda as coordenadas
     }
   }
   return croppedImage;
@@ -589,10 +589,9 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
   
   for(int i = 0; i < img2->height; i++){
     for(int j = 0; j < img2->width; j++){
-      img1->pixel[G(img1,x+j,y+i)] = img2->pixel[G(img2,j,i)];
+      img1->pixel[G(img1,x+j,y+i)] = img2->pixel[G(img2,j,i)]; 
     }
   }
-  return img1;
 }
 
 /// Blend an image into a larger image.
@@ -610,14 +609,13 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   for(int i = 0; i < img2->height; i++){
     for(int j = 0; j < img2->width; j++){
       int newRoundedPixelValue = (int)(img1->pixel[G(img1,x+j,y+i)] * (1-alpha) + img2->pixel[G(img2,j,i)] * alpha + 0.5);
-      if(newRoundedPixelValue > img1->maxval){
+      if(newRoundedPixelValue > img1->maxval){ 
         img1->pixel[G(img1,x+j,y+i)] = img1->maxval;              
       }else{
-        img1->pixel[G(img1,x+j,y+i)] = newRoundedPixelValue;
+        img1->pixel[G(img1,x+j,y+i)] = newRoundedPixelValue; 
       }
     }
   }
-  return img1;
 }
 
 /// Compare an image to a subimage of a larger image.
@@ -652,7 +650,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
 
   for (int y = 0; y <= img1->height - img2->height; y++){
     for (int x = 0; x <= img1->width - img2->width; x++){
-      if (ImageMatchSubImage(img1, x, y, img2)){
+      if (ImageMatchSubImage(img1, x, y, img2)){ //Verifica se a subImagem é igual à imagem
         *px = x;
         *py = y;
         matchFound = 1; //Se encontrar uma subImagem igual à imagem, logo retorna 1 e guarda as coordenadas
@@ -672,8 +670,38 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
 /// Each pixel is substituted by the mean of the pixels in the rectangle
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
-void ImageBlur(Image img, int dx, int dy) { ///
-  assert (img != NULL);
-  assert (dx >= 0 && dy >= 0);
-  // Insert your code here!
+void ImageBlur(Image img, int dx, int dy) {
+  assert(img != NULL);
+  assert(dx >= 0 && dy >= 0);
+
+  Image tempImg = ImageCreate(img->width, img->height, img->maxval); //Cria uma imagem temporária para guardar os valores da imagem original
+
+  for (int y = 0; y < img->height; y++) {
+    for (int x = 0; x < img->width; x++) {
+      double sum = 0;
+      int count = 0;
+
+      for (int i = -dy; i <= dy; i++) {
+        for (int j = -dx; j <= dx; j++) {
+          if (ImageValidPos(img, x + j, y + i)) { //Verifica se o pixel atual está dentro da imagem
+            sum += img->pixel[G(img, x + j, y + i)];  //Soma todos os pixeis à volta do pixel atual
+            count++;
+          }
+        }
+      }
+
+      if (count > 0) { //Se count for 0, significa que não há pixeis à volta do pixel atual
+        tempImg->pixel[G(tempImg, x, y)] = (int)(sum / count + 0.5); //Arredondamento
+      } else {
+        tempImg->pixel[G(tempImg, x, y)] = 0; 
+      }
+    }
+  }
+
+  for (int y = 0; y < img->height; y++) {
+    for (int x = 0; x < img->width; x++) {
+      img->pixel[G(img, x, y)] = tempImg->pixel[G(tempImg, x, y)]; //Substitui os valores da imagem original pelos valores da imagem temporária
+    }
+  }
+
 }
