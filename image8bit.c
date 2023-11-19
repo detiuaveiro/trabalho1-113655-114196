@@ -402,22 +402,26 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 /// Transform image to negative image.
 /// This transforms dark pixels to light pixels and vice-versa,
 /// resulting in a "photographic negative" effect.
-void ImageNegative(Image img) { ///
-  assert (img != NULL);
-  
-  int index = img->width * img->height;
+void ImageNegative(Image img) {
+    assert(img != NULL);
+    int pixmem = 0; // Contador de acesso à memória
 
-  for (int i = 0; i < index; i++) {
-    img->pixel[i] = PixMax - img->pixel[i];
-  }
+    for (int i = 0; i < img->width; i++) {
+        for (int j = 0; j < img->height; j++) {
+            uint8_t currentPixel = ImageGetPixel(img, i, j); // Obtém o valor do pixel usando a função ImageGetPixel
+            ImageSetPixel(img, i, j, PixMax - currentPixel); // Calcula e atribui o valor do pixel negativo usando a função ImageSetPixel
+            pixmem += 2; // Incrementa o contador de acesso à memória para a leitura e gravação do pixel
+        }
+    }
+
+    printf("Total de acessos à memória (pixmemCount): %d\n", pixmem);
+}
   //for(int i = 0; i<img->width;i++){
   //  for(int j = 0;j<img->height;j++){
   //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
   //    ImageSetPixel(img,i,j,PixMax-currentPixel);
   //  }
   //}
-}
-
 /// Apply threshold to image.
 /// Transform all pixels with level<thr to black (0) and
 /// all pixels with level>=thr to white (maxval).
@@ -586,12 +590,15 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
+  int pixmemCount = 0; // Contador de acesso à memória
   
   for(int i = 0; i < img2->height; i++){
     for(int j = 0; j < img2->width; j++){
       img1->pixel[G(img1,x+j,y+i)] = img2->pixel[G(img2,j,i)]; 
+    pixmemCount += 2; // Incrementa o contador de acesso à memória para os dois acessos: img1 e img2
     }
   }
+    printf("Total de acessos à memória (pixmemCount): %d\n", pixmemCount);
 }
 
 /// Blend an image into a larger image.
@@ -600,24 +607,32 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
 /// Requires: img2 must fit inside img1 at position (x, y).
 /// alpha usually is in [0.0, 1.0], but values outside that interval
 /// may provide interesting effects.  Over/underflows should saturate.
-void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
-  assert (img1 != NULL);
-  assert (img2 != NULL);
-  assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-  assert (0.0 <= alpha && alpha <= 1.0);
+void ImageBlend(Image img1, int x, int y, Image img2, double alpha) {
+    assert(img1 != NULL);
+    assert(img2 != NULL);
+    assert(ImageValidRect(img1, x, y, img2->width, img2->height));
+    assert(0.0 <= alpha && alpha <= 1.0);
+    int pixmemCount = 0; // Contador de acesso à memória
 
-  for(int i = 0; i < img2->height; i++){
-    for(int j = 0; j < img2->width; j++){
-      int newRoundedPixelValue = (int)(img1->pixel[G(img1,x+j,y+i)] * (1-alpha) + img2->pixel[G(img2,j,i)] * alpha + 0.5);
-      if(newRoundedPixelValue > img1->maxval){ 
-        img1->pixel[G(img1,x+j,y+i)] = img1->maxval;              
-      }else{
-        img1->pixel[G(img1,x+j,y+i)] = newRoundedPixelValue; 
-      }
+    for (int i = 0; i < img2->height; i++) {
+        for (int j = 0; j < img2->width; j++) {
+            int img1PixelIndex = G(img1, x + j, y + i);
+            int img2PixelIndex = G(img2, j, i);
+
+            int newRoundedPixelValue = (int)(img1->pixel[img1PixelIndex] * (1 - alpha) + img2->pixel[img2PixelIndex] * alpha + 0.5);
+
+            if (newRoundedPixelValue > img1->maxval) {
+                img1->pixel[img1PixelIndex] = img1->maxval;
+            } else {
+                img1->pixel[img1PixelIndex] = newRoundedPixelValue;
+            }
+
+            pixmemCount += 2; // Incrementa o contador de acesso à memória para os dois acessos: img1 e img2
+        }
     }
-  }
-}
 
+    printf("Total de acessos à memória (pixmemCount): %d\n", pixmemCount);
+}
 /// Compare an image to a subimage of a larger image.
 /// Returns 1 (true) if img2 matches subimage of img1 at pos (x, y).
 /// Returns 0, otherwise.
@@ -645,6 +660,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
   assert(img1 != NULL);
   assert(img2 != NULL);
   assert((px != NULL) && (py != NULL));
+  int pixmemCount= 0;
 
   int matchFound = 0;
 
@@ -657,12 +673,16 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
         break;
       }
     }
-    if (matchFound){
-      break;
-    }
-    return matchFound;
+      if (matchFound) {
+          break;
+      }
+      pixmemCount++; // Incrementa o contador de acesso à memória
   }
-  return 0;
+    pixmemCount++; // Incrementa o contador de acesso à memória
+
+    printf("Total de acessos à memória (pixmem): %d\n", pixmemCount);
+
+    return matchFound;
 }
 
 /// Filtering
@@ -672,39 +692,55 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 void ImageBlur(Image img, int dx, int dy) {
-  assert(img != NULL);
-  assert(dx >= 0 && dy >= 0);
+    assert(img != NULL);
+    assert(dx >= 0 && dy >= 0);
 
-  Image tempImg = ImageCreate(img->width, img->height, img->maxval); //Cria uma imagem temporária para guardar os valores da imagem original
+    Image tempImg = ImageCreate(img->width, img->height, img->maxval);
+    int pixmemCount = 0; // Contador de acesso à memória
 
-  for (int y = 0; y < img->height; y++) {
-    for (int x = 0; x < img->width; x++) {
-      double sum = 0;
-      int count = 0;
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            double sum = 0;
+            int count = 0;
 
-      for (int i = -dy; i <= dy; i++) {
-        for (int j = -dx; j <= dx; j++) {
-          if (ImageValidPos(img, x + j, y + i)) { //Verifica se o pixel atual está dentro da imagem
-            sum += img->pixel[G(img, x + j, y + i)];  //Soma todos os pixeis à volta do pixel atual
-            count++;
-          }
+            for (int i = -dy; i <= dy; i++) {
+                for (int j = -dx; j <= dx; j++) {
+                    if (ImageValidPos(img, x + j, y + i)) {
+                        sum += img->pixel[G(img, x + j, y + i)];
+                        count++;
+                        pixmemCount++; // Incrementa o contador de acesso à memória
+                    }
+                }
+            }
+
+            if (count > 0) {
+                tempImg->pixel[G(tempImg, x, y)] = (int)(sum / count + 0.5);
+            } else {
+                tempImg->pixel[G(tempImg, x, y)] = 0;
+            }
+            pixmemCount++; // Incrementa o contador de acesso à memória
         }
-      }
-
-      if (count > 0) { //Se count for 0, significa que não há pixeis à volta do pixel atual
-        tempImg->pixel[G(tempImg, x, y)] = (int)(sum / count + 0.5); //Arredondamento
-      } else {
-        tempImg->pixel[G(tempImg, x, y)] = 0; 
-      }
     }
-  }
 
-  for (int y = 0; y < img->height; y++) {
-    for (int x = 0; x < img->width; x++) {
-      img->pixel[G(img, x, y)] = tempImg->pixel[G(tempImg, x, y)]; //Substitui os valores da imagem original pelos valores da imagem temporária
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            img->pixel[G(img, x, y)] = tempImg->pixel[G(tempImg, x, y)];
+            pixmemCount++; // Incrementa o contador de acesso à memória
+        }
     }
-  }
 
-  ImageDestroy(&tempImg);
+    ImageDestroy(&tempImg);
 
+    printf("Total de acessos à memória (pixmem): %d\n", pixmemCount);
 }
+
+///////////////time////////////////////caltime/////////////////////////pixmem///////////////////
+// neg-time: 0.000035/////////////////0.000030///////////////////////////0//////////////////////
+// thr-time: 0.000066/////////////////0.000055///////////////////////////0//////////////////////
+// bri-time: 0.000085/////////////////0.000071///////////////////////////0//////////////////////
+// rot-time: 0.000164/////////////////0.000137///////////////////////////0//////////////////////
+// mir-time: 0.000157/////////////////0.000132///////////////////////////0//////////////////////
+// cro-time: 0.000024/////////////////0.000020///////////////////////////0//////////////////////
+// pas-time: 0.000016/////////////////0.000014///////////////////////////0//////////////////////
+// ble-time: 1.194564/////////////////1.000974/////////////////////////97800////////////////////
+// blu-time: 1.187920/////////////////1.022712/////////////////////////97800////////////////////
