@@ -404,24 +404,14 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 /// resulting in a "photographic negative" effect.
 void ImageNegative(Image img) {
     assert(img != NULL);
-    int pixmem = 0; // Contador de acesso à memória
-
     for (int i = 0; i < img->width; i++) {
         for (int j = 0; j < img->height; j++) {
-            uint8_t currentPixel = ImageGetPixel(img, i, j); // Obtém o valor do pixel usando a função ImageGetPixel
-            ImageSetPixel(img, i, j, PixMax - currentPixel); // Calcula e atribui o valor do pixel negativo usando a função ImageSetPixel
-            pixmem += 2; // Incrementa o contador de acesso à memória para a leitura e gravação do pixel
+            uint8_t currentPixel = ImageGetPixel(img, i, j);
+            ImageSetPixel(img, i, j, PixMax - currentPixel);
         }
     }
-
-    printf("Total de acessos à memória (pixmemCount): %d\n", pixmem);
 }
-  //for(int i = 0; i<img->width;i++){
-  //  for(int j = 0;j<img->height;j++){
-  //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
-  //    ImageSetPixel(img,i,j,PixMax-currentPixel);
-  //  }
-  //}
+
 /// Apply threshold to image.
 /// Transform all pixels with level<thr to black (0) and
 /// all pixels with level>=thr to white (maxval).
@@ -430,54 +420,47 @@ void ImageThreshold(Image img, uint8 thr) { ///
   check(0 <= thr && thr <= PixMax, "Invalid threshold value");
   int index = img->width * img->height;
 
-  for(int i = 0; i < index; i++){
-    if(img->pixel[i] < thr){
-      img->pixel[i] = 0;
-    }else{
-      img->pixel[i] = img->maxval;
+  for(int i = 0; i<img->width;i++){
+    for(int j = 0;j<img->height;j++){
+      uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
+      if(currentPixel < thr){
+        ImageSetPixel(img,i,j,0);
+      }else{
+        ImageSetPixel(img,i,j,img->maxval);
+      }
     }
   }
-  //for(int i = 0; i<img->width;i++){
-  //  for(int j = 0;j<img->height;j++){
-  //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
-  //    if(currentPixel < thr){
-  //      ImageSetPixel(img,i,j,0);
-  //    }else{
-  //      ImageSetPixel(img,i,j,img->maxval);
-  //    }
-  //  }
-  //}
 }
 /// Brighten image by a factor.
 /// Multiply each pixel level by a factor, but saturate at maxval.
 /// This will brighten the image if factor>1.0 and
 /// darken the image if factor<1.0.
 void ImageBrighten(Image img, double factor) { ///
-  assert (img != NULL);
-  assert (factor >= 0.0);
-  
-  int index = img->width * img->height;
+    assert (img != NULL);
+    assert (factor >= 0.0);
 
-  for(int i = 0; i < index; i++){
-    int newRoundedPixelValue = (int)(img->pixel[i] * factor + 0.5);
-    if(newRoundedPixelValue > img->maxval){
-      img->pixel[i] = img->maxval;              
-    }else{
-      img->pixel[i] = newRoundedPixelValue;
+    int index = img->width * img->height;
+
+    //for(int i = 0; i < index; i++){
+    //int newRoundedPixelValue = (int)(img->pixel[i] * factor + 0.5);
+    //  if(newRoundedPixelValue > img->maxval){
+    //img->pixel[i] = img->maxval;
+    //}else{
+    //img->pixel[i] = newRoundedPixelValue;
+    //}
+    //}
+
+    for (int i = 0; i < img->width; i++) {
+        for (int j = 0; j < img->height; j++) {
+            uint8 currentPixel = ImageGetPixel(img, i, j); //teste para a funçao ImageGetPixel
+            if ((int) (currentPixel * factor + 0.5) > img->maxval) {
+                ImageSetPixel(img, i, j, img->maxval);
+            } else {
+                ImageSetPixel(img, i, j, (int) (currentPixel * factor + 0.5));
+            }
+        }
     }
-  }
-  //for(int i = 0; i<img->width;i++){
-  //  for(int j = 0;j<img->height;j++){
-  //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
-  //    if((int)(currentPixel * factor + 0.5) > img->maxval){
-  //      ImageSetPixel(img,i,j,img->maxval);
-  //    }else{
-  //      ImageSetPixel(img,i,j,(int)(currentPixel * factor + 0.5));
-  //    }
-  //  }
-  //}
 }
-
 
 /// Geometric transformations
 
@@ -514,7 +497,8 @@ Image ImageRotate(Image img) { ///
     for(int x = 0; x < img->width; x++){
       int rotatedX = y;
       int rotatedY = img->width - x - 1;
-      rotatedImage->pixel[G(rotatedImage,rotatedX,rotatedY)] = img->pixel[G(img,x,y)];
+      uint8 pixelValue = ImageGetPixel(img, x, y);
+      ImageSetPixel(rotatedImage, rotatedX, rotatedY, pixelValue);
     }
   }
 
@@ -542,7 +526,8 @@ Image ImageMirror(Image img) { ///
     for(int x = 0; x < img->width; x++){
       int mirroredX = img->width - x - 1;
       int mirroredY = y;
-      mirroredImage->pixel[G(mirroredImage,mirroredX,mirroredY)] = img->pixel[G(img,x,y)];
+      uint8 pixelValue = ImageGetPixel(img, x, y);
+      ImageSetPixel(mirroredImage,mirroredX,mirroredY,pixelValue);
     }
   }
   return mirroredImage;
@@ -560,24 +545,27 @@ Image ImageMirror(Image img) { ///
 /// On success, a new image is returned.
 /// (The caller is responsible for destroying the returned image!)
 /// On failure, returns NULL and errno/errCause are set accordingly.
-Image ImageCrop(Image img, int x, int y, int w, int h) { ///
-  assert (img != NULL);
-  assert (ImageValidRect(img, x, y, w, h));
-  
-  Image croppedImage = ImageCreate(w,h,img->maxval);
-  if(croppedImage == NULL){
-    errno = ENOMEM;
-    errCause = "Error allocating memory for the cropped image.";
-    return NULL;
-  }
+Image ImageCrop(Image img, int x, int y, int w, int h) {
+    assert(img != NULL);
+    assert(ImageValidRect(img, x, y, w, h));
 
-  for(int i = 0; i < h; i++){
-    for(int j = 0; j < w; j++){
-      croppedImage->pixel[G(croppedImage,j,i)] = img->pixel[G(img,x+j,y+i)]; //Se encontrar uma subImagem igual à imagem, logo retorna 1 e guarda as coordenadas
+    Image croppedImage = ImageCreate(w, h, img->maxval);
+    if (croppedImage == NULL) {
+        errno = ENOMEM;
+        errCause = "Error allocating memory for the cropped image.";
+        return NULL;
     }
-  }
-  return croppedImage;
+
+    for (int i = 0; i < w; i++) {
+        for (int j = 0; j < h; j++) {
+            uint8 pixelValue = ImageGetPixel(img, x + i, y + j);
+            ImageSetPixel(croppedImage, i, j, pixelValue);
+        }
+    }
+
+    return croppedImage;
 }
+
 
 
 /// Operations on two images
@@ -589,16 +577,23 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
 void ImagePaste(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
-  assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-  int pixmemCount = 0; // Contador de acesso à memória
-  
+  assert (ImageValidPos(img1, x, y));
+
+
+    //assert (ImageValidRect(img1, x, y, img2->width, img2->height));
+    assert (ImageValidRect(img1, x, y, img2->width + x, img2->height + y));
+
   for(int i = 0; i < img2->height; i++){
     for(int j = 0; j < img2->width; j++){
-      img1->pixel[G(img1,x+j,y+i)] = img2->pixel[G(img2,j,i)]; 
-    pixmemCount += 2; // Incrementa o contador de acesso à memória para os dois acessos: img1 e img2
+
+      img1->pixel[G(img1,x+j,y+i)] = img2->pixel[G(img2,j,i)];
+        uint8 pixelValue1 = ImageGetPixel(img1, x + i, y + j);// teste para a img1
+        ImageSetPixel((Image) ImagePaste, x + i, y + j, pixelValue1);//ambos tem de ter o mesmo pixmem pois ambos são iguais
+        uint8 pixelValue2 = ImageGetPixel(img2, x , y);// teste para a img2
+        ImageSetPixel((Image) ImagePaste, x + i, y + j, pixelValue2);
+//imageTool: image8bit.c:388: ImageSetPixel: Assertion `ImageValidPos(img, x, y)' failed.
     }
   }
-    printf("Total de acessos à memória (pixmemCount): %d\n", pixmemCount);
 }
 
 /// Blend an image into a larger image.
@@ -612,12 +607,13 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) {
     assert(img2 != NULL);
     assert(ImageValidRect(img1, x, y, img2->width, img2->height));
     assert(0.0 <= alpha && alpha <= 1.0);
-    int pixmemCount = 0; // Contador de acesso à memória
 
     for (int i = 0; i < img2->height; i++) {
         for (int j = 0; j < img2->width; j++) {
             int img1PixelIndex = G(img1, x + j, y + i);
             int img2PixelIndex = G(img2, j, i);
+
+
 
             int newRoundedPixelValue = (int)(img1->pixel[img1PixelIndex] * (1 - alpha) + img2->pixel[img2PixelIndex] * alpha + 0.5);
 
@@ -627,11 +623,14 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) {
                 img1->pixel[img1PixelIndex] = newRoundedPixelValue;
             }
 
-            pixmemCount += 2; // Incrementa o contador de acesso à memória para os dois acessos: img1 e img2
+            uint8 pixelValue1 = ImageGetPixel(img1, x + j, y + i);
+            ImageSetPixel(img1, x + j, y + i, pixelValue1);
+
+            uint8 pixelValue2 = ImageGetPixel(img2, j, i);
+            ImageSetPixel(img1, x + j, y + i, pixelValue2);
         }
     }
 
-    printf("Total de acessos à memória (pixmemCount): %d\n", pixmemCount);
 }
 /// Compare an image to a subimage of a larger image.
 /// Returns 1 (true) if img2 matches subimage of img1 at pos (x, y).
@@ -660,7 +659,6 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
   assert(img1 != NULL);
   assert(img2 != NULL);
   assert((px != NULL) && (py != NULL));
-  int pixmemCount= 0;
 
   int matchFound = 0;
 
@@ -676,12 +674,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
       if (matchFound) {
           break;
       }
-      pixmemCount++; // Incrementa o contador de acesso à memória
   }
-    pixmemCount++; // Incrementa o contador de acesso à memória
-
-    printf("Total de acessos à memória (pixmem): %d\n", pixmemCount);
-
     return matchFound;
 }
 
@@ -696,7 +689,6 @@ void ImageBlur(Image img, int dx, int dy) {
     assert(dx >= 0 && dy >= 0);
 
     Image tempImg = ImageCreate(img->width, img->height, img->maxval);
-    int pixmemCount = 0; // Contador de acesso à memória
 
     for (int y = 0; y < img->height; y++) {
         for (int x = 0; x < img->width; x++) {
@@ -708,7 +700,6 @@ void ImageBlur(Image img, int dx, int dy) {
                     if (ImageValidPos(img, x + j, y + i)) {
                         sum += img->pixel[G(img, x + j, y + i)];
                         count++;
-                        pixmemCount++; // Incrementa o contador de acesso à memória
                     }
                 }
             }
@@ -718,29 +709,27 @@ void ImageBlur(Image img, int dx, int dy) {
             } else {
                 tempImg->pixel[G(tempImg, x, y)] = 0;
             }
-            pixmemCount++; // Incrementa o contador de acesso à memória
         }
     }
 
     for (int y = 0; y < img->height; y++) {
         for (int x = 0; x < img->width; x++) {
             img->pixel[G(img, x, y)] = tempImg->pixel[G(tempImg, x, y)];
-            pixmemCount++; // Incrementa o contador de acesso à memória
         }
     }
 
     ImageDestroy(&tempImg);
 
-    printf("Total de acessos à memória (pixmem): %d\n", pixmemCount);
 }
 
 ///////////////time////////////////////caltime/////////////////////////pixmem///////////////////
-// neg-time: 0.000035/////////////////0.000030///////////////////////////0//////////////////////
-// thr-time: 0.000066/////////////////0.000055///////////////////////////0//////////////////////
-// bri-time: 0.000085/////////////////0.000071///////////////////////////0//////////////////////
-// rot-time: 0.000164/////////////////0.000137///////////////////////////0//////////////////////
-// mir-time: 0.000157/////////////////0.000132///////////////////////////0//////////////////////
-// cro-time: 0.000024/////////////////0.000020///////////////////////////0//////////////////////
+// neg-time: 0.000296/////////////////0.000251/////////////////////////18000///////////////////
+// thr-time: 0.000309/////////////////0.000259/////////////////////////18000///////////////////thr:10
+// bri-time: 0.000334/////////////////0.000293/////////////////////////18000///////////////////bri:10000
+// rot-time: 0.000321/////////////////0.000269/////////////////////////18000///////////////////original
+// mir-time: 0.000157/////////////////0.000132/////////////////////////18000///////////////////
+// cro-time: 0.000045/////////////////0.000037/////////////////////////20000///////////////////cortar com 100/100
+// cro-time: 0.000005/////////////////0.000005/////////////////////////200/////////////////////cortar com 10/10
 // pas-time: 0.000016/////////////////0.000014///////////////////////////0//////////////////////
 // ble-time: 1.194564/////////////////1.000974/////////////////////////97800////////////////////
 // blu-time: 1.187920/////////////////1.022712/////////////////////////97800////////////////////
