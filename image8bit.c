@@ -574,26 +574,20 @@ Image ImageCrop(Image img, int x, int y, int w, int h) {
 /// Paste img2 into position (x, y) of img1.
 /// This modifies img1 in-place: no allocation involved.
 /// Requires: img2 must fit inside img1 at position (x, y).
-void ImagePaste(Image img1, int x, int y, Image img2) { ///
-  assert (img1 != NULL);
-  assert (img2 != NULL);
-  assert (ImageValidPos(img1, x, y));
+void ImagePaste(Image img1, int x, int y, Image img2) {
+    assert(img1 != NULL);
+    assert(img2 != NULL);
+    assert(ImageValidPos(img1, x, y));
+    assert(ImageValidRect(img1, x, y, img2->width + x, img2->height + y));
 
+    for (int i = 0; i < img2->height; i++) {
+        for (int j = 0; j < img2->width; j++) {
+            img1->pixel[G(img1, x + j, y + i)] = img2->pixel[G(img2, j, i)];
 
-    //assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-    assert (ImageValidRect(img1, x, y, img2->width + x, img2->height + y));
-
-  for(int i = 0; i < img2->height; i++){
-    for(int j = 0; j < img2->width; j++){
-
-      img1->pixel[G(img1,x+j,y+i)] = img2->pixel[G(img2,j,i)];
-        uint8 pixelValue1 = ImageGetPixel(img1, x + i, y + j);// teste para a img1
-        ImageSetPixel((Image) ImagePaste, x + i, y + j, pixelValue1);//ambos tem de ter o mesmo pixmem pois ambos são iguais
-        uint8 pixelValue2 = ImageGetPixel(img2, x , y);// teste para a img2
-        ImageSetPixel((Image) ImagePaste, x + i, y + j, pixelValue2);
-//imageTool: image8bit.c:388: ImageSetPixel: Assertion `ImageValidPos(img, x, y)' failed.
+            uint8 pixelValue2 = ImageGetPixel(img2, j, i);
+            ImageSetPixel(img1, x + j, y + i, pixelValue2);
+        }
     }
-  }
 }
 
 /// Blend an image into a larger image.
@@ -623,9 +617,6 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) {
                 img1->pixel[img1PixelIndex] = newRoundedPixelValue;
             }
 
-            uint8 pixelValue1 = ImageGetPixel(img1, x + j, y + i);
-            ImageSetPixel(img1, x + j, y + i, pixelValue1);
-
             uint8 pixelValue2 = ImageGetPixel(img2, j, i);
             ImageSetPixel(img1, x + j, y + i, pixelValue2);
         }
@@ -636,21 +627,20 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) {
 /// Returns 1 (true) if img2 matches subimage of img1 at pos (x, y).
 /// Returns 0, otherwise.
 int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
-  assert (img1 != NULL);
-  assert (img2 != NULL);
-  assert (ImageValidPos(img1, x, y));
-  assert (ImageValidRect(img1, x, y, img2->width, img2->height));
+    assert (img1 != NULL);
+    assert (img2 != NULL);
+    assert (ImageValidPos(img1, x, y));
+    assert (ImageValidRect(img1, x, y, img2->width, img2->height));
 
-  for(int i = 0; i < img2->height; i++){
-    for(int j = 0; j < img2->width; j++){
-      if(img1->pixel[G(img1,x+j,y+i)] != img2->pixel[G(img2,j,i)]){
-        return 0; //Se um pixel for diferente, logo retorna 0 porque a subImagem não é igual à imagem
-      }
+    for (int i = 0; i < img2->height; i++) {
+        for (int j = 0; j < img2->width; j++) {
+            if (img1->pixel[G(img1, x + j, y + i)] != img2->pixel[G(img2, j, i)]) {
+                return 0; // Se um pixel for diferente, retorna 0 porque a subImagem não é igual à imagem
+            }
+
+        }
     }
-  }
-  return 1; //Se a subImage for igual a uma parte da imagem retorna 1
 }
-
 /// Locate a subimage inside another image.
 /// Searches for img2 inside img1.
 /// If a match is found, returns 1 and matching position is set in vars (*px, *py).
