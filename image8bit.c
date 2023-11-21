@@ -324,24 +324,15 @@ void ImageStats(Image img, uint8* min, uint8* max) { ///
 
   *min = img->pixel[0];  
   *max = img->pixel[0];
-  int index = img->width * img->height; 
-
-  for (int i = 1; i < index; i++) {
-    uint8 currentPixel = img->pixel[i];        
-    if (currentPixel < *min)
+  for(int i = 1; i<img->width;i++){
+    for(int j = 1;j<img->height;j++){
+      uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
+      if (currentPixel < *min)
         *min = currentPixel;
-    if (currentPixel > *max)
+      if (currentPixel > *max)
         *max = currentPixel;
+    }
   }
-  //for(int i = 1; i<img->width;i++){
-  //  for(int j = 1;j<img->height;j++){
-  //    uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
-  //    if (currentPixel < *min)
-  //      *min = currentPixel;
-  //    if (currentPixel > *max)
-  //      *max = currentPixel;
-  //  }
-  //}
 }
 
 
@@ -418,11 +409,10 @@ void ImageNegative(Image img) {
 void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
   check(0 <= thr && thr <= PixMax, "Invalid threshold value");
-  int index = img->width * img->height;
 
   for(int i = 0; i<img->width;i++){
     for(int j = 0;j<img->height;j++){
-      uint8 currentPixel = ImageGetPixel(img,i,j); //teste para a funçao ImageGetPixel
+      uint8 currentPixel = ImageGetPixel(img,i,j);
       if(currentPixel < thr){
         ImageSetPixel(img,i,j,0);
       }else{
@@ -439,20 +429,9 @@ void ImageBrighten(Image img, double factor) { ///
     assert (img != NULL);
     assert (factor >= 0.0);
 
-    int index = img->width * img->height;
-
-    //for(int i = 0; i < index; i++){
-    //int newRoundedPixelValue = (int)(img->pixel[i] * factor + 0.5);
-    //  if(newRoundedPixelValue > img->maxval){
-    //img->pixel[i] = img->maxval;
-    //}else{
-    //img->pixel[i] = newRoundedPixelValue;
-    //}
-    //}
-
     for (int i = 0; i < img->width; i++) {
         for (int j = 0; j < img->height; j++) {
-            uint8 currentPixel = ImageGetPixel(img, i, j); //teste para a funçao ImageGetPixel
+            uint8 currentPixel = ImageGetPixel(img, i, j);
             if ((int) (currentPixel * factor + 0.5) > img->maxval) {
                 ImageSetPixel(img, i, j, img->maxval);
             } else {
@@ -582,8 +561,6 @@ void ImagePaste(Image img1, int x, int y, Image img2) {
 
     for (int i = 0; i < img2->height; i++) {
         for (int j = 0; j < img2->width; j++) {
-            img1->pixel[G(img1, x + j, y + i)] = img2->pixel[G(img2, j, i)];
-
             uint8 pixelValue2 = ImageGetPixel(img2, j, i);
             ImageSetPixel(img1, x + j, y + i, pixelValue2);
         }
@@ -596,32 +573,22 @@ void ImagePaste(Image img1, int x, int y, Image img2) {
 /// Requires: img2 must fit inside img1 at position (x, y).
 /// alpha usually is in [0.0, 1.0], but values outside that interval
 /// may provide interesting effects.  Over/underflows should saturate.
-void ImageBlend(Image img1, int x, int y, Image img2, double alpha) {
-    assert(img1 != NULL);
-    assert(img2 != NULL);
-    assert(ImageValidRect(img1, x, y, img2->width, img2->height));
-    assert(0.0 <= alpha && alpha <= 1.0);
+void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
+  assert (img1 != NULL);
+  assert (img2 != NULL);
+  assert (ImageValidRect(img1, x, y, img2->width, img2->height));
+  assert (0.0 <= alpha && alpha <= 1.0);
 
-    for (int i = 0; i < img2->height; i++) {
-        for (int j = 0; j < img2->width; j++) {
-            int img1PixelIndex = G(img1, x + j, y + i);
-            int img2PixelIndex = G(img2, j, i);
-
-
-
-            int newRoundedPixelValue = (int)(img1->pixel[img1PixelIndex] * (1 - alpha) + img2->pixel[img2PixelIndex] * alpha + 0.5);
-
-            if (newRoundedPixelValue > img1->maxval) {
-                img1->pixel[img1PixelIndex] = img1->maxval;
-            } else {
-                img1->pixel[img1PixelIndex] = newRoundedPixelValue;
-            }
-
-            uint8 pixelValue2 = ImageGetPixel(img2, j, i);
-            ImageSetPixel(img1, x + j, y + i, pixelValue2);
-        }
+  for(int i = 0; i < img2->height; i++){
+    for(int j = 0; j < img2->width; j++){
+      int newRoundedPixelValue = (int)(ImageGetPixel(img1,x+j,y+i) * (1-alpha) + ImageGetPixel(img2,j,i) * alpha + 0.5);
+      if(newRoundedPixelValue > img1->maxval){ 
+        ImageSetPixel(img1,x+j,y+i, img1->maxval);            
+      }else{
+        ImageSetPixel(img1,x+j,y+i, newRoundedPixelValue);
+      }
     }
-
+  }
 }
 /// Compare an image to a subimage of a larger image.
 /// Returns 1 (true) if img2 matches subimage of img1 at pos (x, y).
@@ -634,10 +601,9 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
 
     for (int i = 0; i < img2->height; i++) {
         for (int j = 0; j < img2->width; j++) {
-            if (img1->pixel[G(img1, x + j, y + i)] != img2->pixel[G(img2, j, i)]) {
+            if(ImageGetPixel(img1, x + j, y + i) != ImageGetPixel(img2, j, i)){
                 return 0; // Se um pixel for diferente, retorna 0 porque a subImagem não é igual à imagem
             }
-
         }
     }
 }
@@ -676,62 +642,51 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 void ImageBlur(Image img, int dx, int dy) {
-    assert(img != NULL);
-    assert(dx >= 0 && dy >= 0);
+  assert(img != NULL);
+  assert(dx >= 0 && dy >= 0);
 
-    Image tempImg = ImageCreate(img->width, img->height, img->maxval);
+  Image tempImg = ImageCreate(img->width, img->height, img->maxval); //Cria uma imagem temporária para guardar os valores da imagem original
 
-    for (int y = 0; y < img->height; y++) {
-        for (int x = 0; x < img->width; x++) {
-            double sum = 0;
-            int count = 0;
+  for (int y = 0; y < img->height; y++) {
+    for (int x = 0; x < img->width; x++) {
+      double sum = 0;
+      int count = 0;
 
-            for (int i = -dy; i <= dy; i++) {
-                for (int j = -dx; j <= dx; j++) {
-                    if (ImageValidPos(img, x + j, y + i)) {
-                        sum += img->pixel[G(img, x + j, y + i)];
-                        count++;
-                        uint8 pixelValue = ImageGetPixel(img, x, y);
-                        ImageSetPixel(tempImg,x , y , pixelValue);///#          time  0.092813        caltime   0.077854               pixmem0.     39678272
-
-
-                    }
-                }
-
-            }
-
-            if (count > 0) {
-                tempImg->pixel[G(tempImg, x, y)] = (int)(sum / count + 0.5);
-            } else {
-                tempImg->pixel[G(tempImg, x, y)] = 0;
-            }
-            uint8 pixelValue = ImageGetPixel(img, x, y);
-            ImageSetPixel(tempImg,x , y , pixelValue);///#          time  0.092813        caltime   0.077854               pixmem0.     39678272
+      for (int i = y-dy; i <= y+dy; i++) {
+        for (int j = x-dx; j <= x+dx; j++) {
+          if (ImageValidPos(img, j, i)) { //Verifica se o pixel atual está dentro da imagem
+            sum += ImageGetPixel(img, j, i);  //Soma todos os pixeis à volta do pixel atual
+            count++;
+          }
         }
+      }
+
+      if (count > 0) { //Se count for 0, significa que não há pixeis à volta do pixel atual
+        ImageSetPixel(tempImg, x, y, (int)(sum / count + 0.5)); //Guarda na imagem temporária o valor da média dos pixeis à volta do pixel atual
+      } else {
+        ImageSetPixel(tempImg, x, y, 0); 
+      }
     }
+  }
 
-    for (int y = 0; y < img->height; y++) {
-        for (int x = 0; x < img->width; x++) {
-            img->pixel[G(img, x, y)] = tempImg->pixel[G(tempImg, x, y)];
-            uint8 pixelValue = ImageGetPixel(img, x, y);
-            ImageSetPixel(tempImg,x , y , pixelValue);///#          time 025335         caltime     0.021461           pixmem0.           180000
-
-        }
+  for (int y = 0; y < img->height; y++) {
+    for (int x = 0; x < img->width; x++) {
+      ImageSetPixel(img, x, y, ImageGetPixel(tempImg, x, y));  //Substitui os valores da imagem original pelos valores da imagem temporária
     }
+  }
 
-    ImageDestroy(&tempImg);
-
+  ImageDestroy(&tempImg);
 
 }
 
-///////////////time////////////////////caltime/////////////////////////pixmem///////////////////
-// neg-time: 0.000296/////////////////0.000251/////////////////////////18000///////////////////
-// thr-time: 0.000309/////////////////0.000259/////////////////////////18000///////////////////thr:10
-// bri-time: 0.000334/////////////////0.000293/////////////////////////18000///////////////////bri:10000
-// rot-time: 0.000321/////////////////0.000269/////////////////////////18000///////////////////original
-// mir-time: 0.000157/////////////////0.000132/////////////////////////18000///////////////////
-// cro-time: 0.000045/////////////////0.000037/////////////////////////20000///////////////////cortar com 100/100
-// cro-time: 0.000005/////////////////0.000005/////////////////////////200/////////////////////cortar com 10/10
-// pas-time: 0.000016/////////////////0.000014///////////////////////////0//////////////////////
-// ble-time: 1.194564/////////////////1.000974/////////////////////////97800////////////////////
-// blu-time: 1.187920/////////////////1.022712/////////////////////////97800////////////////////
+///////////////time////////////////////caltime/////////////////////////pixmem//////////////////inputs///////////////////////
+// neg-time:        /////////////////        /////////////////////////      ///////////////////
+// thr-time:        /////////////////        /////////////////////////      ///////////////////
+// bri-time:        /////////////////        /////////////////////////      ///////////////////
+// rot-time:        /////////////////        /////////////////////////      ///////////////////
+// mir-time:        /////////////////        /////////////////////////      ///////////////////
+// cro-time:        /////////////////        /////////////////////////      ///////////////////
+// cro-time:        /////////////////        /////////////////////////      ///////////////////
+// pas-time:        /////////////////        /////////////////////////      ///////////////////
+// ble-time:        /////////////////        /////////////////////////      ///////////////////
+// blu-time:        /////////////////        /////////////////////////      ///////////////////
