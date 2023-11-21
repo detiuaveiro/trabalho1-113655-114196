@@ -645,28 +645,29 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
 /// Searches for img2 inside img1.
 /// If a match is found, returns 1 and matching position is set in vars (*px, *py).
 /// If no match is found, returns 0 and (*px, *py) are left untouched.
-int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){ ///
-  assert(img1 != NULL);
-  assert(img2 != NULL);
-  assert((px != NULL) && (py != NULL));
+int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){
+    assert(img1 != NULL);
+    assert(img2 != NULL);
+    assert((px != NULL) && (py != NULL));
 
-  int matchFound = 0;
+    int matchFound = 0;
 
-  for (int y = 0; y <= img1->height - img2->height; y++){
-    for (int x = 0; x <= img1->width - img2->width; x++){
-      if (ImageMatchSubImage(img1, x, y, img2)){ //Verifica se a subImagem é igual à imagem
-        *px = x;
-        *py = y;
-        matchFound = 1; //Se encontrar uma subImagem igual à imagem, logo retorna 1 e guarda as coordenadas
-        break;
-      }
+    for (int y = 0; y <= img1->height - img2->height; y++){
+        for (int x = 0; x <= img1->width - img2->width; x++){
+            if (ImageMatchSubImage(img1, x, y, img2)){
+                *px = x;
+                *py = y;
+                matchFound = 1; //Se encontrar uma subImagem igual à imagem, logo retorna 1 e guarda as coordenadas
+                break;
+            }
+        }
+        if (matchFound){
+            break;
+        }
     }
-      if (matchFound) {
-          break;
-      }
-  }
     return matchFound;
 }
+
 
 /// Filtering
 
@@ -690,8 +691,13 @@ void ImageBlur(Image img, int dx, int dy) {
                     if (ImageValidPos(img, x + j, y + i)) {
                         sum += img->pixel[G(img, x + j, y + i)];
                         count++;
+                        uint8 pixelValue = ImageGetPixel(img, x, y);
+                        ImageSetPixel(tempImg,x , y , pixelValue);///#          time  0.092813        caltime   0.077854               pixmem0.     39678272
+
+
                     }
                 }
+
             }
 
             if (count > 0) {
@@ -699,16 +705,22 @@ void ImageBlur(Image img, int dx, int dy) {
             } else {
                 tempImg->pixel[G(tempImg, x, y)] = 0;
             }
+            uint8 pixelValue = ImageGetPixel(img, x, y);
+            ImageSetPixel(tempImg,x , y , pixelValue);///#          time  0.092813        caltime   0.077854               pixmem0.     39678272
         }
     }
 
     for (int y = 0; y < img->height; y++) {
         for (int x = 0; x < img->width; x++) {
             img->pixel[G(img, x, y)] = tempImg->pixel[G(tempImg, x, y)];
+            uint8 pixelValue = ImageGetPixel(img, x, y);
+            ImageSetPixel(tempImg,x , y , pixelValue);///#          time 025335         caltime     0.021461           pixmem0.           180000
+
         }
     }
 
     ImageDestroy(&tempImg);
+
 
 }
 
