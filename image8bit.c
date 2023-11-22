@@ -641,51 +641,48 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){
 /// Each pixel is substituted by the mean of the pixels in the rectangle
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
+
+double clamp(double d, double min, double max) {
+  const double t = d < min ? min : d;
+  return t > max ? max : t;
+}
+
 void ImageBlur(Image img, int dx, int dy) {
   assert(img != NULL);
   assert(dx >= 0 && dy >= 0);
 
-  Image tempImg = ImageCreate(img->width, img->height, img->maxval); //Cria uma imagem temporária para guardar os valores da imagem original
+  Image tempImg = ImageCreate(img->width, img->height, img->maxval);
+
+  int area = (2 * dx + 1) * (2 * dy + 1);
 
   for (int y = 0; y < img->height; y++) {
     for (int x = 0; x < img->width; x++) {
       double sum = 0;
-      int count = 0;
 
-      for (int i = y-dy; i <= y+dy; i++) {
-        for (int j = x-dx; j <= x+dx; j++) {
-          if (ImageValidPos(img, j, i)) { //Verifica se o pixel atual está dentro da imagem
-            sum += ImageGetPixel(img, j, i);  //Soma todos os pixeis à volta do pixel atual
-            count++;
-          }
+      for (int i = y - dy; i <= y + dy; i++) {
+        for (int j = x - dx; j <= x + dx; j++) {
+          sum += ImageGetPixel(img, clamp(j, 0, img->width - 1), clamp(i, 0, img->height - 1));
         }
       }
 
-      if (count > 0) { //Se count for 0, significa que não há pixeis à volta do pixel atual
-        ImageSetPixel(tempImg, x, y, (int)(sum / count + 0.5)); //Guarda na imagem temporária o valor da média dos pixeis à volta do pixel atual
-      } else {
-        ImageSetPixel(tempImg, x, y, 0); 
-      }
+      ImageSetPixel(tempImg, x, y, (int)(sum / area + 0.5));
     }
   }
 
-  for (int y = 0; y < img->height; y++) {
-    for (int x = 0; x < img->width; x++) {
-      ImageSetPixel(img, x, y, ImageGetPixel(tempImg, x, y));  //Substitui os valores da imagem original pelos valores da imagem temporária
-    }
-  }
+  free(img->pixel);
+  img->pixel = tempImg->pixel;
+  tempImg->pixel = NULL;
 
   ImageDestroy(&tempImg);
-
 }
 
-///////////////time////////////////////caltime/////////////////////////pixmem//////////////////inputs///////////////////////
-// neg-time:0.000297/////////////////0.000249//////////////////////////180000///////////////////
-// thr-time:0.000310/////////////////0.000260//////////////////////////180000///////////////////128
-// bri-time:0.000337/////////////////0.000283//////////////////////////180000///////////////////33
-// rot-time:0.000328/////////////////0.000275//////////////////////////180000///////////////////
-// mir-time:0.000324/////////////////0.000271//////////////////////////180000///////////////////
-// cro-time:0.000043/////////////////0.000036///////////////////////////20000///////////////////100,100,100,100
-// pas-time:0.000031/////////////////0.000026////////////////////////////15600///////////////////100,100
-// ble-time:0.000060/////////////////0.000051///////////////////////////23400///////////////////100,100,.33
-// blu-time:0.093444/////////////////0.077892/////////////////////////39858272///////////////////7.7
+///////////////time////////////////////caltime/////////////////////////pixmem//////////////////inputs-original.pgm///////////////////////
+// neg-time:0.000297/////////////////0.000249//////////////////////////18000///////////////////
+// thr-time:0.000310/////////////////0.000260//////////////////////////18000///////////////////128
+// bri-time:0.000337/////////////////0.000283//////////////////////////18000///////////////////33
+// rot-time:0.000328/////////////////0.000275//////////////////////////18000///////////////////
+// mir-time:0.000324/////////////////0.000271//////////////////////////18000///////////////////
+// cro-time:0.000043/////////////////0.000036//////////////////////////20000///////////////////100,100,100,100
+// pas-time:0.000031/////////////////0.000026//////////////////////////15600///////////////////100,100
+// ble-time:0.000060/////////////////0.000051//////////////////////////23400///////////////////100,100,.33
+// blu-time:0.093444/////////////////0.077892/////////////////////////39858272/////////////////7.7
