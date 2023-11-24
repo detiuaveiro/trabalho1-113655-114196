@@ -603,10 +603,10 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
 
     for (int i = 0; i < img2->height; i++) {
         for (int j = 0; j < img2->width; j++) {
+            COMPARISONS += 1; 
             if(ImageGetPixel(img1, x + j, y + i) != ImageGetPixel(img2, j, i)){
                 return 0; // Se um pixel for diferente, retorna 0 porque a subImagem não é igual à imagem
             }
-            COMPARISONS += 1; 
         }
     }
     return 1; // Se todos os pixeis forem iguais, retorna 1 porque a subImagem é igual à imagem
@@ -620,22 +620,16 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){
     assert(img2 != NULL);
     assert((px != NULL) && (py != NULL));
 
-    int matchFound = 0;
-
     for (int y = 0; y <= img1->height - img2->height; y++){
         for (int x = 0; x <= img1->width - img2->width; x++){
             if (ImageMatchSubImage(img1, x, y, img2)){
                 *px = x;
                 *py = y;
-                matchFound = 1; //Se encontrar uma subImagem igual à imagem, logo retorna 1 e guarda as coordenadas
-                break;
+                return 1; // Se encontrar a subImagem, retorna 1 e as coordenadas da subImagem
             }
         }
-        if (matchFound){
-            break;
-        }
     }
-    return matchFound;
+    return 0;
 }
 
 
@@ -646,7 +640,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 
-double clamp(double d, double min, double max) {
+double static clamp(double d, double min, double max) {
   const double t = d < min ? min : d;
   return t > max ? max : t;
 }
@@ -656,6 +650,12 @@ void ImageBlur(Image img, int dx, int dy) {
   assert(dx >= 0 && dy >= 0);
 
   Image tempImg = ImageCreate(img->width, img->height, img->maxval);
+
+  if(tempImg == NULL){
+    errno = ENOMEM;
+    errCause = "Error allocating memory for the temporary image.";
+    return;
+  }
 
   int area = (2 * dx + 1) * (2 * dy + 1);
 
@@ -679,14 +679,3 @@ void ImageBlur(Image img, int dx, int dy) {
 
   ImageDestroy(&tempImg);
 }
-
-///////////////time////////////////////caltime/////////////////////////pixmem//////////////////inputs-original.pgm///////////////////////
-// neg-time:0.000297/////////////////0.000249//////////////////////////18000///////////////////
-// thr-time:0.000310/////////////////0.000260//////////////////////////18000///////////////////128
-// bri-time:0.000337/////////////////0.000283//////////////////////////18000///////////////////33
-// rot-time:0.000328/////////////////0.000275//////////////////////////18000///////////////////
-// mir-time:0.000324/////////////////0.000271//////////////////////////18000///////////////////
-// cro-time:0.000043/////////////////0.000036//////////////////////////20000///////////////////100,100,100,100
-// pas-time:0.000031/////////////////0.000026//////////////////////////15600///////////////////100,100
-// ble-time:0.000060/////////////////0.000051//////////////////////////23400///////////////////100,100,.33
-// blu-time:0.093444/////////////////0.077892/////////////////////////39858272/////////////////7.7
