@@ -640,7 +640,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 
-double static clamp(double d, double min, double max) {
+double clamp(double d, double min, double max) {
   const double t = d < min ? min : d;
   return t > max ? max : t;
 }
