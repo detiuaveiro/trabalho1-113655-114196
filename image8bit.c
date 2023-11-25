@@ -174,6 +174,7 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (width >= 0);
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
+//condições para verificar se os parametros são válidos
 
   Image img = calloc(1,sizeof(struct image));
   check(img != NULL,"Error allocating memory for the image struct.");
@@ -187,12 +188,14 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
     img = NULL;
     return NULL;
   }
+  //condições para verificar se a alocação de memmoria for NuLL
 
   img->width = width;
   img->height = height;
   img->maxval = maxval;
-
+//propriedades da imagem
   return img;
+
 }
 
 /// Destroy the image pointed to by (*imgp).
@@ -210,7 +213,7 @@ void ImageDestroy(Image* imgp) { ///
   free((*imgp)->pixel);
   free(*imgp);
   *imgp = NULL;
-
+//libertar a memoria alocada para a imagem
 }
 
 
@@ -281,13 +284,13 @@ int ImageSave(Image img, const char* filename) { ///
   int h = img->height;
   uint8 maxval = img->maxval;
   FILE* f = NULL;
-
+//propriedades da imagem
   int success =
   check( (f = fopen(filename, "wb")) != NULL, "Open failed" ) &&
   check( fprintf(f, "P5\n%d %d\n%u\n", w, h, maxval) > 0, "Writing header failed" ) &&
   check( fwrite(img->pixel, sizeof(uint8), w*h, f) == w*h, "Writing pixels failed" ); 
   PIXMEM += (unsigned long)(w*h);  // count pixel memory accesses
-
+//erros
   // Cleanup
   if (f != NULL) fclose(f);
   return success;
@@ -404,6 +407,7 @@ void ImageNegative(Image img) {
         }
     }
 }
+//busca a altura e largura da imagem e percorre todos os pixeis da imagem e faz o calculo para o negativo da imagem
 
 /// Apply threshold to image.
 /// Transform all pixels with level<thr to black (0) and
@@ -423,6 +427,10 @@ void ImageThreshold(Image img, uint8 thr) { ///
     }
   }
 }
+//busca a altura e largura da imagem e percorre todos os pixeis da imagem e faz o calculo para o threshold da imagem
+// se o pixel for menor que o threshold fica a 0 se for maior fica a maxval
+
+
 /// Brighten image by a factor.
 /// Multiply each pixel level by a factor, but saturate at maxval.
 /// This will brighten the image if factor>1.0 and
@@ -442,6 +450,8 @@ void ImageBrighten(Image img, double factor) { ///
         }
     }
 }
+//busca a altura e largura da imagem e percorre todos os pixeis da imagem e faz o calculo para o brighten  da imagem
+// no caso de não estar arredondado soma 0.5 para arredondar
 
 /// Geometric transformations
 
@@ -473,6 +483,7 @@ Image ImageRotate(Image img) { ///
     errCause = "Error allocating memory for the rotated image.";
     return NULL;
   }
+  //condições para verificar se a alocação de memmoria for NuLL
 
   for(int y = 0; y < img->height; y++){
     for(int x = 0; x < img->width; x++){
@@ -485,6 +496,8 @@ Image ImageRotate(Image img) { ///
 
   return rotatedImage;
 }
+//percorre todos os pixeis da imagem e faz o calculo para a rotação da imagem em X,Y
+
 
 /// Mirror an image = flip left-right.
 /// Returns a mirrored version of the image.
@@ -502,6 +515,7 @@ Image ImageMirror(Image img) { ///
     errCause = "Error allocating memory for the mirrored image.";
     return NULL;
   }
+//condições para verificar se a alocação de memmoria for NuLL
 
   for(int y = 0; y < img->height; y++){
     for(int x = 0; x < img->width; x++){
@@ -513,6 +527,8 @@ Image ImageMirror(Image img) { ///
   }
   return mirroredImage;
 }
+//faz o espelho da imagem ao fazer -1 no X
+//deixando o Y igual para ser linear
 
 /// Crop a rectangular subimage from img.
 /// The rectangle is specified by the top left corner coords (x, y) and
@@ -536,6 +552,7 @@ Image ImageCrop(Image img, int x, int y, int w, int h) {
         errCause = "Error allocating memory for the cropped image.";
         return NULL;
     }
+//condições para verificar se a alocação de memmoria for NuLL
 
     for (int i = 0; i < w; i++) {
         for (int j = 0; j < h; j++) {
@@ -546,7 +563,7 @@ Image ImageCrop(Image img, int x, int y, int w, int h) {
 
     return croppedImage;
 }
-
+//percorre os pixeis e faz o recorte da imagem com a instrução pretendida pelo usuario
 
 
 /// Operations on two images
@@ -568,6 +585,7 @@ void ImagePaste(Image img1, int x, int y, Image img2) {
         }
     }
 }
+//copia a img1 completamente igual para uma img2
 
 /// Blend an image into a larger image.
 /// Blend img2 into position (x, y) of img1.
@@ -592,6 +610,8 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
     }
   }
 }
+//
+
 /// Compare an image to a subimage of a larger image.
 /// Returns 1 (true) if img2 matches subimage of img1 at pos (x, y).
 /// Returns 0, otherwise.
@@ -629,7 +649,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){
             }
         }
     }
-    return 0;
+    return 0; //não encontrou
 }
 
 
@@ -656,6 +676,7 @@ void ImageBlur(Image img, int dx, int dy) {
     errCause = "Error allocating memory for the temporary image.";
     return;
   }
+//condições necessárias
 
   int area = (2 * dx + 1) * (2 * dy + 1);
 
