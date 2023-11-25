@@ -362,7 +362,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
 // Transform (x, y) coords into linear pixel index.
 // This internal function is used in ImageGetPixel / ImageSetPixel. 
 // The returned index must satisfy (0 <= index < img->width*img->height)
-static inline int G(Image img, int x, int y) { ///
+static inline int G(Image img, int x, int y) {
   int index;
   index = y*img->width + x; // index linear
   assert (0 <= index && index < img->width*img->height);
@@ -370,7 +370,7 @@ static inline int G(Image img, int x, int y) { ///
 }
 
 /// Get the pixel (level) at position (x,y).
-uint8 ImageGetPixel(Image img, int x, int y) { ///
+uint8 ImageGetPixel(Image img, int x, int y) {
   assert (img != NULL);
   assert (ImageValidPos(img, x, y));
   PIXMEM += 1;  // count one pixel access (read)
@@ -378,7 +378,7 @@ uint8 ImageGetPixel(Image img, int x, int y) { ///
 } 
 
 /// Set the pixel at position (x,y) to new level.
-void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
+void ImageSetPixel(Image img, int x, int y, uint8 level) {
   assert (img != NULL);
   assert (ImageValidPos(img, x, y));
   PIXMEM += 1;  // count one pixel access (store)
@@ -481,8 +481,8 @@ Image ImageRotate(Image img) { ///
 
   for(int y = 0; y < img->height; y++){
     for(int x = 0; x < img->width; x++){
-      int rotatedX = y; //rodar as coordenadas
-      int rotatedY = img->width - x - 1; //rodar as coordenadas
+      int rotatedX = y; //rodar as coordenadas em X
+      int rotatedY = img->width - x - 1; //rodar as coordenadas em Y
       uint8 pixelValue = ImageGetPixel(img, x, y); //procura o pixel atual
       ImageSetPixel(rotatedImage, rotatedX, rotatedY, pixelValue); //atribui o pixel atual à imagem rodada
     }
@@ -511,8 +511,8 @@ Image ImageMirror(Image img) { ///
 
   for(int y = 0; y < img->height; y++){
     for(int x = 0; x < img->width; x++){
-      int mirroredX = img->width - x - 1; //espelhar as coordenadas
-      int mirroredY = y; //espelhar as coordenadas
+      int mirroredX = img->width - x - 1; //espelhar as coordenadas em X
+      int mirroredY = y; //espelhar as coordenadas em Y mas mantendo as coordenadas originais em Y
       uint8 pixelValue = ImageGetPixel(img, x, y); //procura o pixel atual
       ImageSetPixel(mirroredImage,mirroredX,mirroredY,pixelValue); //atribui o pixel atual à imagem espelhada
     }
@@ -612,7 +612,7 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
 
     for (int i = 0; i < img2->height; i++) {
         for (int j = 0; j < img2->width; j++) {
-            COMPARISONS += 1; 
+            COMPARISONS += 1; //adicionar 1 ao contador de comparações
             if(ImageGetPixel(img1, x + j, y + i) != ImageGetPixel(img2, j, i)){ //verificar se os pixeis são diferentes
                 return 0; // Se um pixel for diferente, retorna 0 porque a subImagem não é igual à imagem
             }
@@ -634,8 +634,8 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){
     for (int y = 0; y <= img1->height - img2->height; y++){
         for (int x = 0; x <= img1->width - img2->width; x++){
             if (ImageMatchSubImage(img1, x, y, img2)){ //verificar se a subImagem é igual à imagem
-                *px = x; //atribuir as coordenadas à imagem
-                *py = y;
+                *px = x; //atribuir as coordenadas x ao inicio da imagem
+                *py = y; //atribuir as coordenadas y ao inicio da imagem
                 return 1; // Se encontrar a subImagem, retorna 1 e as coordenadas da subImagem
             }
         }
@@ -709,14 +709,15 @@ void ImageBlur(Image img, int dx, int dy) {
       int pixelVal;
 
       //verificar se as coordenadas são válidas
-      if(x < dx) {
-        if(y < dy) { 
+      if(x < dx){
+        if(y < dy) {
           pixelVal = ImageGetPixel(img, 0, 0); //se as coordenadas não forem válidas, o pixel é o primeiro da linha
         } else if(y - dy >= height) {
           pixelVal = ImageGetPixel(img, 0, height - 1); //se as coordenadas não forem válidas e a altura for maior que a altura da imagem, o pixel é o ultimo da coluna
         } else {
-          pixelVal = ImageGetPixel(img, 0, y - dy); //se as coordenadas não forem válidas, o pixel é o primeiro da linha
+          pixelVal = ImageGetPixel(img, 0, y - dy); //se as coordenadas não forem válidas, o pixel é o primeiro da coluna
         }
+
       }else if(x - dx >= width) {
         //verificar se as coordenadas são válidas na horizontal
         if(y < dy) {
@@ -726,6 +727,7 @@ void ImageBlur(Image img, int dx, int dy) {
         } else {
           pixelVal = ImageGetPixel(img, width - 1, y - dy); //se as coordenadas não forem válidas e a largura for maior que a largura da imagem, o pixel é o ultimo da coluna
         }
+
       }else {
         //verificar se as coordenadas são válidas na vertical
         if(y < dy) {
@@ -736,18 +738,18 @@ void ImageBlur(Image img, int dx, int dy) {
           pixelVal = ImageGetPixel(img, x - dx, y - dy);  //se as coordenadas não forem válidas e a altura for maior que a altura da imagem, o pixel é o ultimo da coluna
         }
       } 
-  
+
       if(x > 0) {
-        pixelVal += pixelArray[y * sum_width + x - 1];
+        pixelVal += pixelArray[y * sum_width + x - 1]; //se as coordenadas em x forem válidas, o  valor do pixel é a soma pixelVal atual
       }
       if(y > 0) {
-        pixelVal += pixelArray[(y - 1) * sum_width + x];
+        pixelVal += pixelArray[(y - 1) * sum_width + x]; //se as coordenadas em y forem válidas, o valor do pixel é a soma pixelVal atual
       }
       if(x > 0 && y > 0) {
-        pixelVal -= pixelArray[(y - 1) * sum_width + x - 1];
+        pixelVal -= pixelArray[(y - 1) * sum_width + x - 1]; // se as coordenadas em x,y forem válidas, o valor do pixel é a soma pixelVal atual
       }
 
-      pixelArray[y * sum_width + x] = pixelVal;
+      pixelArray[y * sum_width + x] = pixelVal; //atribuir o valor do pixel ao array de soma
     }
   }
 
@@ -758,21 +760,21 @@ void ImageBlur(Image img, int dx, int dy) {
       int x2 = x + 2 * dx;
       int y2 = y + 2 * dy;
 
-      int sum = pixelArray[y2 * sum_width + x2];
+      int sum = pixelArray[y2 * sum_width + x2]; //atribuir o valor do pixel ao array de soma
 
       if(x1 > 0) {
-        sum -= pixelArray[y2 * sum_width + x1 - 1];
+        sum -= pixelArray[y2 * sum_width + x1 - 1]; //se as coordenadas em x1 forem válidas, o sum é a diferênça entre
       }
       if(y1 > 0) {
-        sum -= pixelArray[(y1 - 1) * sum_width + x2];
+        sum -= pixelArray[(y1 - 1) * sum_width + x2]; //se as coordenadas em y1 forem válidas, o sum é a diferênça entre
       }
       if(x1 > 0 && y1 > 0) {
-        sum += pixelArray[(y1 - 1) * sum_width + x1 - 1];
+        sum += pixelArray[(y1 - 1) * sum_width + x1 - 1]; //se as coordenadas em x1,y1 forem válidas, o sum é a soma entre
       }
 
-      ImageSetPixel(img, x, y, sum/area + 0.5);
+      ImageSetPixel(img, x, y, sum/area + 0.5); //atribuir o valor do pixel à imagem
     }
   }
 
-  free(pixelArray);
+  free(pixelArray); //libertar a memoria alocada para o array de soma
 }
