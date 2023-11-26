@@ -630,7 +630,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){
     assert(img1 != NULL);
     assert(img2 != NULL);
     assert((px != NULL) && (py != NULL));
-    if((img1->width >= img2->width) && (img1->height >= img2->height))
+    if((img1->width < img2->width) && (img1->height < img2->height))
         return 0; //verificar se a imagem é maior que a subImagem
 
     for (int y = 0; y <= img1->height - img2->height; y++){
