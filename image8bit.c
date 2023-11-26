@@ -630,6 +630,8 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2){
     assert(img1 != NULL);
     assert(img2 != NULL);
     assert((px != NULL) && (py != NULL));
+    if((img1->width >= img2->width) && (img1->height >= img2->height))
+        return 0; //verificar se a imagem é maior que a subImagem
 
     for (int y = 0; y <= img1->height - img2->height; y++){
         for (int x = 0; x <= img1->width - img2->width; x++){
@@ -748,7 +750,6 @@ void ImageBlur(Image img, int dx, int dy) {
       if(x > 0 && y > 0) {
         pixelVal -= pixelArray[(y - 1) * sum_width + x - 1]; // se as coordenadas em x,y forem válidas, o valor do pixel é a soma pixelVal atual
       }
-
       pixelArray[y * sum_width + x] = pixelVal; //atribuir o valor do pixel ao array de soma
     }
   }
